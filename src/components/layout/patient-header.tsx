@@ -4,8 +4,10 @@ import * as React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+import { LanguageSwitcher } from '@/components/language-switcher'
 
 interface PatientHeaderProps {
   user?: {
@@ -16,12 +18,35 @@ interface PatientHeaderProps {
 }
 
 export function PatientHeader({ user }: PatientHeaderProps) {
+  const t = useTranslations()
   const [isProfileOpen, setIsProfileOpen] = React.useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false)
+  const [isNotificationsOpen, setIsNotificationsOpen] = React.useState(false)
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const pathname = usePathname()
   const router = useRouter()
   const supabase = createClient()
+
+  // Sample notifications - in production, fetch from database
+  const [notifications, setNotifications] = React.useState([
+    {
+      id: '1',
+      title: t('header.welcome'),
+      message: t('header.accountCreated'),
+      time: t('header.justNow'),
+      read: false,
+    },
+  ])
+
+  const unreadCount = notifications.filter(n => !n.read).length
+
+  const markAllAsRead = () => {
+    setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+  }
+
+  const markAsRead = (id: string) => {
+    setNotifications(prev => prev.map(n => n.id === id ? { ...n, read: true } : n))
+  }
 
   const handleLogout = async () => {
     setIsLoggingOut(true)
@@ -38,9 +63,9 @@ export function PatientHeader({ user }: PatientHeaderProps) {
   }
 
   const navigation = [
-    { name: 'Dashboard', href: '/dashboard' },
-    { name: 'Booking', href: '/dashboard/booking' },
-    { name: 'My Appointments', href: '/dashboard/appointments' },
+    { name: t('nav.dashboard'), href: '/dashboard' },
+    { name: t('nav.booking'), href: '/dashboard/booking' },
+    { name: t('nav.myAppointments'), href: '/dashboard/appointments' },
   ]
 
   const isActive = (href: string) => {
@@ -82,7 +107,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
           <nav className="hidden md:flex items-center gap-1">
             {navigation.map((item) => (
               <Link
-                key={item.name}
+                key={item.href}
                 href={item.href}
                 className={cn(
                   'px-4 py-2 rounded-lg text-sm font-medium transition-colors',
@@ -96,20 +121,102 @@ export function PatientHeader({ user }: PatientHeaderProps) {
             ))}
           </nav>
 
-          {/* Right Side - User Profile */}
-          <div className="flex items-center gap-4">
+          {/* Right Side - Language Switcher, Notifications, User Profile */}
+          <div className="flex items-center gap-2 sm:gap-4">
+            {/* Language Switcher */}
+            <LanguageSwitcher />
+
             {/* Notifications */}
-            <button className="relative p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
-              </svg>
-              <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
-            </button>
+            <div className="relative">
+              <button
+                onClick={() => {
+                  setIsNotificationsOpen(!isNotificationsOpen)
+                  setIsProfileOpen(false)
+                }}
+                className="relative p-2 text-gray-600 hover:text-primary hover:bg-gray-100 rounded-lg transition-colors"
+                aria-label={t('header.notifications')}
+              >
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full"></span>
+                )}
+              </button>
+
+              {/* Notifications Dropdown */}
+              {isNotificationsOpen && (
+                <>
+                  <div
+                    className="fixed inset-0 z-40"
+                    onClick={() => setIsNotificationsOpen(false)}
+                  />
+                  <div className="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50 overflow-hidden">
+                    <div className="px-4 py-3 border-b border-gray-100 flex items-center justify-between">
+                      <h3 className="font-semibold text-gray-900">{t('header.notifications')}</h3>
+                      {unreadCount > 0 && (
+                        <button
+                          onClick={markAllAsRead}
+                          className="text-xs text-primary hover:underline"
+                        >
+                          {t('header.markAllRead')}
+                        </button>
+                      )}
+                    </div>
+                    <div className="max-h-80 overflow-y-auto">
+                      {notifications.length === 0 ? (
+                        <div className="p-8 text-center">
+                          <svg className="w-12 h-12 mx-auto text-gray-300 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
+                          </svg>
+                          <p className="text-sm text-gray-500">{t('header.noNotifications')}</p>
+                        </div>
+                      ) : (
+                        notifications.map((notification) => (
+                          <div
+                            key={notification.id}
+                            onClick={() => markAsRead(notification.id)}
+                            className={cn(
+                              'px-4 py-3 border-b border-gray-50 hover:bg-gray-50 cursor-pointer transition-colors',
+                              !notification.read && 'bg-primary-50/50'
+                            )}
+                          >
+                            <div className="flex items-start gap-3">
+                              <div className={cn(
+                                'w-2 h-2 rounded-full mt-2 flex-shrink-0',
+                                notification.read ? 'bg-gray-300' : 'bg-primary'
+                              )} />
+                              <div className="flex-1 min-w-0">
+                                <p className="text-sm font-medium text-gray-900">{notification.title}</p>
+                                <p className="text-xs text-gray-500 mt-0.5">{notification.message}</p>
+                                <p className="text-xs text-gray-400 mt-1">{notification.time}</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    <div className="px-4 py-3 border-t border-gray-100 bg-gray-50">
+                      <Link
+                        href="/dashboard/profile"
+                        onClick={() => setIsNotificationsOpen(false)}
+                        className="text-xs text-primary hover:underline block text-center"
+                      >
+                        {t('header.notificationSettings')}
+                      </Link>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
 
             {/* User Profile Dropdown */}
             <div className="relative">
               <button
-                onClick={() => setIsProfileOpen(!isProfileOpen)}
+                onClick={() => {
+                  setIsProfileOpen(!isProfileOpen)
+                  setIsNotificationsOpen(false)
+                }}
                 className="flex items-center gap-3 p-1.5 rounded-lg hover:bg-gray-100 transition-colors"
               >
                 {/* Avatar */}
@@ -120,7 +227,8 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                       alt={user.name || 'User'}
                       width={36}
                       height={36}
-                      className="object-cover"
+                      className="object-cover w-full h-full"
+                      unoptimized
                     />
                   ) : (
                     <span className="text-sm font-semibold text-primary">
@@ -130,8 +238,8 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                 </div>
                 {/* Name - Hidden on mobile */}
                 <div className="hidden lg:block text-left">
-                  <p className="text-sm font-medium text-gray-900">{user?.name || 'Patient'}</p>
-                  <p className="text-xs text-gray-500">Patient</p>
+                  <p className="text-sm font-medium text-gray-900">{user?.name || t('common.patient')}</p>
+                  <p className="text-xs text-gray-500">{t('common.patient')}</p>
                 </div>
                 <svg
                   className={cn('w-4 h-4 text-gray-500 transition-transform hidden sm:block', isProfileOpen && 'rotate-180')}
@@ -153,7 +261,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                   <div className="absolute right-0 mt-2 w-56 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
                     {/* User Info */}
                     <div className="px-4 py-3 border-b border-gray-100">
-                      <p className="text-sm font-medium text-gray-900">{user?.name || 'Patient'}</p>
+                      <p className="text-sm font-medium text-gray-900">{user?.name || t('common.patient')}</p>
                       <p className="text-xs text-gray-500 truncate">{user?.email || 'patient@example.com'}</p>
                     </div>
 
@@ -167,7 +275,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
-                        Profile Settings
+                        {t('nav.profileSettings')}
                       </Link>
                       <Link
                         href="/dashboard/support"
@@ -177,7 +285,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                         <svg className="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 5.636l-3.536 3.536m0 5.656l3.536 3.536M9.172 9.172L5.636 5.636m3.536 9.192l-3.536 3.536M21 12a9 9 0 11-18 0 9 9 0 0118 0zm-5 0a4 4 0 11-8 0 4 4 0 018 0z" />
                         </svg>
-                        Support
+                        {t('nav.support')}
                       </Link>
                     </div>
 
@@ -198,7 +306,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
                           </svg>
                         )}
-                        {isLoggingOut ? 'Logging out...' : 'Logout'}
+                        {isLoggingOut ? t('nav.loggingOut') : t('nav.logout')}
                       </button>
                     </div>
                   </div>
@@ -231,7 +339,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
             <nav className="flex flex-col gap-1">
               {navigation.map((item) => (
                 <Link
-                  key={item.name}
+                  key={item.href}
                   href={item.href}
                   className={cn(
                     'px-4 py-3 rounded-lg text-sm font-medium transition-colors',

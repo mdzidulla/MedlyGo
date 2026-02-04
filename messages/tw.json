@@ -17,18 +17,39 @@
     "search": "Hwehwɛ",
     "close": "To mu",
     "yes": "Aane",
-    "no": "Dabi"
+    "no": "Dabi",
+    "patient": "Ɔyarefo",
+    "viewAll": "Hwɛ Nyinaa",
+    "seeAll": "Hwɛ Nyinaa"
   },
   "nav": {
     "home": "Fie",
     "bookAppointment": "Hyehyɛ Appointment",
+    "booking": "Hyehyɛ",
     "myAppointments": "Me Appointments",
     "dashboard": "Dashboard",
     "profile": "Me Ho Nsɛm",
+    "profileSettings": "Me Ho Nhyehyɛe",
     "settings": "Nhyehyɛe",
     "logout": "Pue",
+    "loggingOut": "Ɛrepue...",
     "login": "Wura mu",
-    "signup": "Yi wo din"
+    "signup": "Yi wo din",
+    "about": "Yɛn Ho",
+    "contact": "Frɛ Yɛn",
+    "hospitals": "Ayaresabea",
+    "departments": "Departments",
+    "support": "Mmoa",
+    "helpCenter": "Mmoa Center"
+  },
+  "header": {
+    "notifications": "Nkra",
+    "noNotifications": "Nkra biara nni hɔ",
+    "markAllRead": "Kyerɛ sɛ woakenkan nyinaa",
+    "notificationSettings": "Nkra Nhyehyɛe",
+    "welcome": "Akwaaba MedlyGo!",
+    "accountCreated": "Wɔayi wo account yie.",
+    "justNow": "Seisei ara"
   },
   "home": {
     "hero": {
@@ -161,6 +182,53 @@
       "viewHistory": "Hwɛ Asɛm a Atwam"
     }
   },
+  "profile": {
+    "title": "Me Ho Nhyehyɛe",
+    "subtitle": "Hwɛ wo ho nsɛm ne nhyehyɛe so",
+    "personalInfo": "Wo Ho Nsɛm",
+    "contactDetails": "Frɛ Nsɛm",
+    "medicalInfo": "Ayaresa Nsɛm",
+    "emergencyContact": "Emergency Frɛ",
+    "security": "Ahobammɔ",
+    "notifications": "Nkra",
+    "fullName": "Din Nyinaa",
+    "dateOfBirth": "Wo Awoda",
+    "gender": "Ɔbaa anaa Ɔbarima",
+    "email": "Email Address",
+    "phone": "Fon Number",
+    "address": "Address",
+    "ghanaCard": "Ghana Card Number",
+    "ghanaCardHelp": "Wo Ghana Card boa ma ayaresabea hu wo ntɛm.",
+    "contactName": "Obi a Wobɛfrɛ No Din",
+    "relationship": "Wo ne no Ayɔnkofa",
+    "notSet": "Wɔnhyɛɛ mu",
+    "verified": "Wɔadi Dua",
+    "password": "Password",
+    "passwordManaged": "Wode Google na ɛwura mu - Google na ɛhwɛ password so",
+    "manageGoogle": "Hwɛ So Wɔ Google",
+    "activeSessions": "Sessions a Ɛyɛ Adwuma",
+    "currentDevice": "Wo wɔ device yi so seisei",
+    "active": "Ɛyɛ Adwuma",
+    "deleteAccount": "Popa Account",
+    "deleteAccountDesc": "Popa wo account ne wo nsɛm nyinaa koraa",
+    "deleteConfirmTitle": "Popa Account",
+    "deleteConfirmDesc": "Eyi yɛ koraa na worentumi nsan. Wo nsɛm nyinaa, appointments, ne wo ho nsɛm nyinaa bɛyera.",
+    "typeDelete": "Kyerɛw DELETE na di mu dua",
+    "deleting": "Ɛrepopa..."
+  },
+  "notifications": {
+    "title": "Nkra Nhyehyɛe",
+    "saving": "Ɛrekora...",
+    "saved": "Wɔakora",
+    "appointmentReminders": "Appointment Nkaeɛ",
+    "appointmentRemindersDesc": "Nya SMS nkaeɛ ansa na wo appointment adu",
+    "emailNotifications": "Email Nkra",
+    "emailNotificationsDesc": "Nya appointment confirmations wɔ email so",
+    "marketingUpdates": "Nsɛm Foforɔ",
+    "marketingUpdatesDesc": "Nya nsɛm foforɔ a ɛfa features ne ayaresabea ho",
+    "healthTips": "Apɔmuden Afotu",
+    "healthTipsDesc": "Apɔmuden afotu daa"
+  },
   "auth": {
     "login": {
       "title": "Akwaaba Bio",
@@ -201,6 +269,7 @@
         "title": "Wo Ho Nsɛm",
         "fullNameLabel": "Din Nyinaa",
         "emailLabel": "Email Address",
+        "confirmPasswordLabel": "Di Password Dua",
         "dateOfBirthLabel": "Wo Awoda",
         "genderLabel": "Ɔbaa anaa Ɔbarima",
         "genderOptions": {
@@ -218,7 +287,9 @@
           "uppercase": "Nkyerɛwde kɛse biako",
           "lowercase": "Nkyerɛwde ketewa biako",
           "number": "Nɔma biako"
-        }
+        },
+        "moreChars": "nkyerɛwde pii hia",
+        "strong": "Password yɛ den"
       },
       "ghanaCard": {
         "title": "Ghana Card (Ɛnyɛ Dɛ)",
@@ -228,7 +299,13 @@
       },
       "haveAccount": "Wowɔ account dada?",
       "loginLink": "Wura mu",
-      "createButton": "Yi Account"
+      "createButton": "Yi Account",
+      "orSignupWith": "Anaa yi din de email",
+      "googleRecommended": "Yi din de Google (Yɛkamfo)",
+      "termsAgree": "Sɛ woyi wo din a, wopene",
+      "and": "ne",
+      "creatingAccount": "Ɛreyi Account...",
+      "accountCreated": "Wɔayi account! Hwɛ wo email ma confirmation link. Ɛrekɔ login..."
     }
   },
   "chat": {
@@ -242,7 +319,7 @@
       "checkAppointment": "Hwɛ me appointment",
       "departments": "Departments bɛn na ɛwɔ hɔ?"
     },
-    "footer": "MedlyGo AI na ɛhyɛ mu ahoɔden • Emergency appointments nko"
+    "footer": "MedlyGo AI na ɛhyɛ mu ahoɔden - Emergency appointments nni hɔ"
   },
   "errors": {
     "required": "Ɛsɛ sɛ wohyɛ field yi mu",
@@ -253,9 +330,16 @@
     "networkError": "Network asɛm. Hwɛ wo connection.",
     "serverError": "Server asɛm. Sɔ bio akyiri.",
     "notFound": "Yɛanhu",
-    "unauthorized": "Wura mu na toa so"
+    "unauthorized": "Wura mu na toa so",
+    "fillAllFields": "Hyɛ fields nyinaa mu",
+    "passwordMinLength": "Password ɛsɛ sɛ ɛyɛ nkyerɛwde 8 paa",
+    "unexpectedError": "Biribi a yɛnhwɛɛ kwan aba"
   },
   "footer": {
+    "description": "Yɛma apɔmuden yɛ mmerɛw ma obiara wɔ Ghana.",
+    "quickLinks": "Links Ntɛm",
+    "support": "Mmoa",
+    "legal": "Mmara",
     "copyright": "© {year} MedlyGo. Aho kwan nyinaa wɔ hɔ.",
     "privacy": "Privacy Policy",
     "terms": "Terms of Service",

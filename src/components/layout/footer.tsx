@@ -1,7 +1,14 @@
+'use client'
+
 import Link from 'next/link'
 import Image from 'next/image'
+import { useTranslations } from 'next-intl'
 
 export function Footer() {
+  const t = useTranslations('footer')
+  const tNav = useTranslations('nav')
+  const currentYear = new Date().getFullYear()
+
   return (
     <footer className="bg-gray-900 text-white py-12">
       <div className="container mx-auto px-4 max-w-6xl">
@@ -19,27 +26,27 @@ export function Footer() {
               <span className="text-h3 font-bold text-white">MedlyGo</span>
             </Link>
             <p className="text-body-sm text-gray-400">
-              Making healthcare accessible for everyone in Ghana.
+              {t('description')}
             </p>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="text-label mb-4">Quick Links</h4>
+            <h4 className="text-label mb-4">{t('quickLinks')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  Home
+                  {tNav('home')}
                 </Link>
               </li>
               <li>
                 <Link href="/about" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  About Us
+                  {t('about')}
                 </Link>
               </li>
               <li>
                 <Link href="/contact" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  Contact
+                  {t('contact')}
                 </Link>
               </li>
             </ul>
@@ -47,16 +54,16 @@ export function Footer() {
 
           {/* Support */}
           <div>
-            <h4 className="text-label mb-4">Support</h4>
+            <h4 className="text-label mb-4">{t('support')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/help" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  Help Center
+                  {tNav('helpCenter')}
                 </Link>
               </li>
               <li>
                 <Link href="/faq" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  FAQ
+                  {t('faq')}
                 </Link>
               </li>
             </ul>
@@ -64,16 +71,16 @@ export function Footer() {
 
           {/* Legal */}
           <div>
-            <h4 className="text-label mb-4">Legal</h4>
+            <h4 className="text-label mb-4">{t('legal')}</h4>
             <ul className="space-y-2">
               <li>
                 <Link href="/privacy" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  Privacy Policy
+                  {t('privacy')}
                 </Link>
               </li>
               <li>
                 <Link href="/terms" className="text-body-sm text-gray-400 hover:text-white transition-colors">
-                  Terms of Service
+                  {t('terms')}
                 </Link>
               </li>
             </ul>
@@ -82,7 +89,7 @@ export function Footer() {
 
         <div className="border-t border-gray-800 mt-8 pt-8 text-center">
           <p className="text-body-sm text-gray-400">
-            &copy; {new Date().getFullYear()} MedlyGo. All rights reserved.
+            © {currentYear} MedlyGo. All rights reserved.
           </p>
         </div>
       </div>
