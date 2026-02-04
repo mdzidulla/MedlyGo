@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,10 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function SignupPage() {
   const router = useRouter()
+  const t = useTranslations('auth.signup')
+  const tErrors = useTranslations('errors')
+  const tFooter = useTranslations('footer')
+
   const [isLoading, setIsLoading] = React.useState(false)
   const [isGoogleLoading, setIsGoogleLoading] = React.useState(false)
   const [error, setError] = React.useState('')
@@ -27,17 +32,17 @@ export default function SignupPage() {
     setSuccess('')
 
     if (!fullName || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields')
+      setError(tErrors('fillAllFields'))
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(tErrors('passwordMismatch'))
       return
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError(tErrors('passwordMinLength'))
       return
     }
 
@@ -67,14 +72,14 @@ export default function SignupPage() {
       setPassword('')
       setConfirmPassword('')
 
-      setSuccess('Account created! Check your email for a confirmation link. Redirecting to login...')
+      setSuccess(t('accountCreated'))
 
       // Redirect to login page after 3 seconds
       setTimeout(() => {
         router.push('/login')
       }, 3000)
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(tErrors('unexpectedError'))
     } finally {
       setIsLoading(false)
     }
@@ -98,7 +103,7 @@ export default function SignupPage() {
         setIsGoogleLoading(false)
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(tErrors('unexpectedError'))
       setIsGoogleLoading(false)
     }
   }
@@ -106,9 +111,9 @@ export default function SignupPage() {
   return (
     <Card className="shadow-card-hover">
       <CardHeader className="text-center">
-        <CardTitle className="text-h1">Create Account</CardTitle>
+        <CardTitle className="text-h1">{t('title')}</CardTitle>
         <CardDescription className="text-body">
-          Join MedlyGo to book hospital appointments easily
+          {t('subtitle')}
         </CardDescription>
       </CardHeader>
 
@@ -158,7 +163,7 @@ export default function SignupPage() {
               />
             </svg>
           )}
-          Sign up with Google (Recommended)
+          {t('googleRecommended')}
         </Button>
 
         <div className="relative my-6">
@@ -166,41 +171,41 @@ export default function SignupPage() {
             <span className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-body-sm">
-            <span className="bg-white px-4 text-gray-500">Or sign up with email</span>
+            <span className="bg-white px-4 text-gray-500">{t('orSignupWith')}</span>
           </div>
         </div>
 
         <form onSubmit={handleEmailSignup} className="space-y-4">
           <Input
-            label="Full Name"
-            placeholder="Enter your full name"
+            label={t('personal.fullNameLabel')}
+            placeholder={t('personal.fullNameLabel')}
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             required
           />
 
           <Input
-            label="Email Address"
+            label={t('personal.emailLabel')}
             type="email"
-            placeholder="Enter your email"
+            placeholder={t('personal.emailLabel')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
 
           <Input
-            label="Password"
+            label={t('password.passwordLabel')}
             type="password"
-            placeholder="At least 8 characters"
+            placeholder={t('password.requirements.length')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
           />
 
           <Input
-            label="Confirm Password"
+            label={t('password.confirmLabel')}
             type="password"
-            placeholder="Re-enter your password"
+            placeholder={t('password.confirmLabel')}
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
@@ -225,8 +230,8 @@ export default function SignupPage() {
               </div>
               <p className="text-body-sm text-gray-500">
                 {password.length < 8
-                  ? `${8 - password.length} more characters needed`
-                  : '✓ Strong password'}
+                  ? `${8 - password.length} ${t('password.moreChars')}`
+                  : `✓ ${t('password.strong')}`}
               </p>
             </div>
           )}
@@ -243,29 +248,29 @@ export default function SignupPage() {
                   <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                   <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                 </svg>
-                Creating Account...
+                {t('creatingAccount')}
               </>
             ) : (
-              'Create Account'
+              t('createButton')
             )}
           </Button>
         </form>
 
         <p className="mt-6 text-center text-body-sm text-gray-500">
-          By signing up, you agree to our{' '}
+          {t('termsAgree')}{' '}
           <Link href="/terms" className="text-primary hover:underline">
-            Terms of Service
+            {tFooter('terms')}
           </Link>{' '}
-          and{' '}
+          {t('and')}{' '}
           <Link href="/privacy" className="text-primary hover:underline">
-            Privacy Policy
+            {tFooter('privacy')}
           </Link>
         </p>
 
         <p className="mt-4 text-center text-body-sm text-gray-600">
-          Already have an account?{' '}
+          {t('haveAccount')}{' '}
           <Link href="/login" className="text-primary font-medium hover:underline">
-            Sign In
+            {t('loginLink')}
           </Link>
         </p>
       </CardContent>

@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -79,6 +80,10 @@ type BookingStep = 'hospital' | 'department' | 'datetime' | 'confirm'
 
 export default function BookPage() {
   const router = useRouter()
+  const t = useTranslations('booking')
+  const tCommon = useTranslations('common')
+  const tFooter = useTranslations('footer')
+  const tChat = useTranslations('chat')
 
   const [step, setStep] = React.useState<BookingStep>('hospital')
   const [searchQuery, setSearchQuery] = React.useState('')
@@ -124,12 +129,19 @@ export default function BookPage() {
     }
   }
 
+  const stepLabels = [
+    t('steps.hospital'),
+    t('steps.department'),
+    t('steps.datetime'),
+    t('steps.confirm')
+  ]
+
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
       {/* Progress Indicator */}
       <div className="mb-8">
         <div className="flex items-center justify-between">
-          {['Hospital', 'Department', 'Date & Time', 'Confirm'].map((label, index) => {
+          {stepLabels.map((label, index) => {
             const stepIndex = index + 1
             const steps: BookingStep[] = ['hospital', 'department', 'datetime', 'confirm']
             const currentStepIndex = steps.indexOf(step) + 1
@@ -172,16 +184,16 @@ export default function BookPage() {
       {/* Step Content */}
       {step === 'hospital' && (
         <div>
-          <h1 className="text-h1 text-gray-900 mb-2">Select Hospital</h1>
+          <h1 className="text-h1 text-gray-900 mb-2">{t('hospital.title')}</h1>
           <p className="text-body text-gray-600 mb-6">
-            Choose from public hospitals across Ghana
+            {t('hospital.searchPlaceholder')}
           </p>
 
           {/* Search and Filter */}
           <div className="flex gap-4 mb-6">
             <div className="flex-1 relative">
               <Input
-                placeholder="Search hospitals..."
+                placeholder={t('hospital.searchPlaceholder')}
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="pl-10"
@@ -200,7 +212,7 @@ export default function BookPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
               </svg>
-              Near Me
+              {tChat('suggestions.findHospitals').split(' ').slice(-2).join(' ')}
             </Button>
           </div>
 
@@ -256,10 +268,10 @@ export default function BookPage() {
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
             </svg>
-            Back
+            {tCommon('back')}
           </button>
 
-          <h1 className="text-h1 text-gray-900 mb-2">Select Department</h1>
+          <h1 className="text-h1 text-gray-900 mb-2">{t('department.title')}</h1>
           <p className="text-body text-gray-600 mb-6">
             {selectedHospital?.name}
           </p>
@@ -267,7 +279,7 @@ export default function BookPage() {
           {/* Search */}
           <div className="relative mb-6">
             <Input
-              placeholder="Search departments or describe symptoms..."
+              placeholder={tCommon('search')}
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="pl-10"
@@ -291,12 +303,12 @@ export default function BookPage() {
                 </svg>
               </div>
               <div>
-                <h3 className="text-label text-gray-900">Not sure which department?</h3>
+                <h3 className="text-label text-gray-900">{tChat('suggestions.departments')}</h3>
                 <p className="text-body-sm text-gray-600">
-                  Describe your symptoms to our AI assistant and get a recommendation.
+                  {tChat('footer')}
                 </p>
                 <Button variant="link" className="p-0 h-auto mt-1">
-                  Talk to AI Assistant →
+                  {tChat('suggestions.bookAppointment')} →
                 </Button>
               </div>
             </div>
@@ -371,6 +383,8 @@ function DateTimeSelection({
   onBack: () => void
   onContinue: () => void
 }) {
+  const t = useTranslations('booking')
+  const tCommon = useTranslations('common')
   const [currentMonth, setCurrentMonth] = React.useState(new Date())
 
   // Generate calendar days
@@ -417,10 +431,10 @@ function DateTimeSelection({
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back
+        {tCommon('back')}
       </button>
 
-      <h1 className="text-h1 text-gray-900 mb-2">Select Date & Time</h1>
+      <h1 className="text-h1 text-gray-900 mb-2">{t('datetime.title')}</h1>
       <p className="text-body text-gray-600 mb-6">
         {hospital?.name} • {department?.name}
       </p>
@@ -493,14 +507,14 @@ function DateTimeSelection({
         {/* Time Slots */}
         <Card>
           <CardContent className="p-6">
-            <h2 className="text-h3 text-gray-900 mb-4">Available Slots</h2>
+            <h2 className="text-h3 text-gray-900 mb-4">{t('datetime.selectTime')}</h2>
 
             {!selectedDate ? (
-              <p className="text-body text-gray-500">Please select a date first</p>
+              <p className="text-body text-gray-500">{t('datetime.selectDate')}</p>
             ) : (
               <div className="space-y-6">
                 <div>
-                  <h3 className="text-label text-gray-700 mb-3">Morning</h3>
+                  <h3 className="text-label text-gray-700 mb-3">{t('datetime.morning')}</h3>
                   <div className="grid grid-cols-4 gap-2">
                     {morningSlots.map((time) => (
                       <button
@@ -520,7 +534,7 @@ function DateTimeSelection({
                 </div>
 
                 <div>
-                  <h3 className="text-label text-gray-700 mb-3">Afternoon</h3>
+                  <h3 className="text-label text-gray-700 mb-3">{t('datetime.afternoon')}</h3>
                   <div className="grid grid-cols-4 gap-2">
                     {afternoonSlots.map((time) => (
                       <button
@@ -550,7 +564,7 @@ function DateTimeSelection({
           disabled={!selectedDate || !selectedTime}
           onClick={onContinue}
         >
-          Continue to Confirmation
+          {tCommon('next')}
         </Button>
       </div>
     </div>
@@ -572,6 +586,11 @@ function ConfirmBooking({
   onBack: () => void
 }) {
   const router = useRouter()
+  const t = useTranslations('booking')
+  const tCommon = useTranslations('common')
+  const tFooter = useTranslations('footer')
+  const tNotifications = useTranslations('notifications')
+
   const [reason, setReason] = React.useState('')
   const [smsNotification, setSmsNotification] = React.useState(true)
   const [emailNotification, setEmailNotification] = React.useState(true)
@@ -606,17 +625,17 @@ function ConfirmBooking({
         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
         </svg>
-        Back
+        {tCommon('back')}
       </button>
 
-      <h1 className="text-h1 text-gray-900 mb-6">Confirm Your Booking</h1>
+      <h1 className="text-h1 text-gray-900 mb-6">{t('confirmation.title')}</h1>
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
           {/* Booking Summary */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">Appointment Details</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">{t('confirmation.appointmentDetails')}</h2>
 
               <div className="space-y-4">
                 <div className="flex items-start gap-4">
@@ -626,7 +645,7 @@ function ConfirmBooking({
                     </svg>
                   </div>
                   <div>
-                    <p className="text-body-sm text-gray-500">Hospital</p>
+                    <p className="text-body-sm text-gray-500">{t('confirmation.hospital')}</p>
                     <p className="text-label text-gray-900">{hospital?.name}</p>
                     <p className="text-body-sm text-gray-500">{hospital?.address}</p>
                   </div>
@@ -637,7 +656,7 @@ function ConfirmBooking({
                     <span className="text-lg">{department?.icon}</span>
                   </div>
                   <div>
-                    <p className="text-body-sm text-gray-500">Department</p>
+                    <p className="text-body-sm text-gray-500">{t('confirmation.department')}</p>
                     <p className="text-label text-gray-900">{department?.name}</p>
                   </div>
                 </div>
@@ -649,7 +668,7 @@ function ConfirmBooking({
                     </svg>
                   </div>
                   <div>
-                    <p className="text-body-sm text-gray-500">Date & Time</p>
+                    <p className="text-body-sm text-gray-500">{t('confirmation.date')} & {t('confirmation.time')}</p>
                     <p className="text-label text-gray-900">{formatDate(date)}</p>
                     <p className="text-body-sm text-gray-500">{time}</p>
                   </div>
@@ -661,11 +680,11 @@ function ConfirmBooking({
           {/* Reason for Visit */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">Reason for Visit (Optional)</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">{t('confirmation.patientDetails')}</h2>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder="Briefly describe your symptoms or reason for the appointment..."
+                placeholder={t('confirmation.consultationFee')}
                 className="w-full h-24 p-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
               />
             </CardContent>
@@ -674,7 +693,7 @@ function ConfirmBooking({
           {/* Notification Preferences */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">Notification Preferences</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">{tNotifications('title')}</h2>
 
               <div className="space-y-3">
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -684,7 +703,7 @@ function ConfirmBooking({
                     onChange={(e) => setSmsNotification(e.target.checked)}
                     className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <span className="text-body text-gray-700">SMS reminders</span>
+                  <span className="text-body text-gray-700">{tNotifications('appointmentRemindersDesc')}</span>
                 </label>
 
                 <label className="flex items-center gap-3 cursor-pointer">
@@ -694,7 +713,7 @@ function ConfirmBooking({
                     onChange={(e) => setEmailNotification(e.target.checked)}
                     className="w-5 h-5 rounded border-gray-300 text-primary focus:ring-primary"
                   />
-                  <span className="text-body text-gray-700">Email reminders</span>
+                  <span className="text-body text-gray-700">{tNotifications('emailNotificationsDesc')}</span>
                 </label>
               </div>
             </CardContent>
@@ -705,11 +724,11 @@ function ConfirmBooking({
         <div>
           <Card className="sticky top-24">
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">Booking Summary</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">{t('confirmation.appointmentDetails')}</h2>
 
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-body-sm">
-                  <span className="text-gray-500">Consultation Fee</span>
+                  <span className="text-gray-500">{t('confirmation.consultationFee')}</span>
                   <span className="text-gray-900">Free (NHIS)</span>
                 </div>
               </div>
@@ -722,13 +741,13 @@ function ConfirmBooking({
                   className="w-5 h-5 mt-0.5 rounded border-gray-300 text-primary focus:ring-primary"
                 />
                 <span className="text-body-sm text-gray-600">
-                  I agree to the{' '}
+                  {t('confirmation.terms')}{' '}
                   <Link href="/terms" className="text-primary hover:underline">
-                    Terms of Service
+                    {tFooter('terms')}
                   </Link>{' '}
-                  and{' '}
+                  &{' '}
                   <Link href="/privacy" className="text-primary hover:underline">
-                    Privacy Policy
+                    {tFooter('privacy')}
                   </Link>
                 </span>
               </label>
@@ -740,7 +759,7 @@ function ConfirmBooking({
                 isLoading={isLoading}
                 onClick={handleConfirm}
               >
-                Confirm Booking
+                {t('confirmation.confirmButton')}
               </Button>
             </CardContent>
           </Card>

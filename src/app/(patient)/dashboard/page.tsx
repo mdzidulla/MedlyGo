@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -37,6 +38,11 @@ const statusColors = {
 function DashboardContent() {
   const searchParams = useSearchParams()
   const bookingSuccess = searchParams.get('booking') === 'success'
+  const t = useTranslations('dashboard')
+  const tCommon = useTranslations('common')
+  const tBooking = useTranslations('booking')
+  const tNav = useTranslations('nav')
+
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(bookingSuccess)
   const [isLoading, setIsLoading] = React.useState(true)
   const [user, setUser] = React.useState<UserProfile | null>(null)
@@ -134,9 +140,9 @@ function DashboardContent() {
 
   const getGreeting = () => {
     const hour = new Date().getHours()
-    if (hour < 12) return 'Good morning'
-    if (hour < 17) return 'Good afternoon'
-    return 'Good evening'
+    if (hour < 12) return t('greeting.morning')
+    if (hour < 17) return t('greeting.afternoon')
+    return t('greeting.evening')
   }
 
   const getFirstName = () => {
@@ -150,6 +156,11 @@ function DashboardContent() {
       day: date.getDate(),
       month: date.toLocaleDateString('en-GH', { month: 'short' }),
     }
+  }
+
+  const getStatusLabel = (status: string) => {
+    const statusKey = status.replace('_', '') as keyof typeof statusColors
+    return t(`status.${status === 'no_show' ? 'noShow' : status}`)
   }
 
   if (isLoading) {
@@ -168,9 +179,9 @@ function DashboardContent() {
               </svg>
             </div>
             <div>
-              <p className="text-label text-success">Booking Confirmed!</p>
+              <p className="text-label text-success">{tBooking('success.title')}</p>
               <p className="text-body-sm text-gray-600">
-                Your appointment has been successfully booked. Check your phone for SMS confirmation.
+                {tBooking('success.message')}
               </p>
             </div>
           </div>
@@ -190,8 +201,8 @@ function DashboardContent() {
           </h1>
           <p className="text-body text-gray-600">
             {upcomingAppointments.length === 0
-              ? 'You have no upcoming appointments'
-              : `You have ${upcomingAppointments.length} upcoming appointment${upcomingAppointments.length !== 1 ? 's' : ''}`}
+              ? t('noUpcoming')
+              : `${upcomingAppointments.length} ${t('upcomingAppointments').toLowerCase()}`}
           </p>
         </div>
 
@@ -200,7 +211,7 @@ function DashboardContent() {
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Book New Appointment
+            {t('quickActions.bookNew')}
           </Button>
         </Link>
       </div>
@@ -210,7 +221,7 @@ function DashboardContent() {
         <div className="lg:col-span-2 space-y-8">
           {/* Upcoming Appointments */}
           <section>
-            <h2 className="text-h2 text-gray-900 mb-4">Upcoming Appointments</h2>
+            <h2 className="text-h2 text-gray-900 mb-4">{t('upcomingAppointments')}</h2>
 
             {upcomingAppointments.length === 0 ? (
               <Card>
@@ -220,10 +231,10 @@ function DashboardContent() {
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
                   </div>
-                  <h3 className="text-h3 text-gray-900 mb-2">No upcoming appointments</h3>
-                  <p className="text-body text-gray-600 mb-4">Book an appointment to get started</p>
+                  <h3 className="text-h3 text-gray-900 mb-2">{t('noUpcoming')}</h3>
+                  <p className="text-body text-gray-600 mb-4">{t('bookFirst')}</p>
                   <Link href="/dashboard/booking">
-                    <Button>Book Appointment</Button>
+                    <Button>{tNav('bookAppointment')}</Button>
                   </Link>
                 </CardContent>
               </Card>
@@ -242,12 +253,12 @@ function DashboardContent() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-label text-gray-900">{apt.hospital?.name || 'Hospital'}</h3>
+                                <h3 className="text-label text-gray-900">{apt.hospital?.name || tBooking('confirmation.hospital')}</h3>
                                 <Badge variant={statusColors[apt.status]}>
-                                  {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                                  {getStatusLabel(apt.status)}
                                 </Badge>
                               </div>
-                              <p className="text-body-sm text-gray-600">{apt.department?.name || 'Department'}</p>
+                              <p className="text-body-sm text-gray-600">{apt.department?.name || tBooking('confirmation.department')}</p>
                               <div className="flex items-center gap-4 mt-2 text-body-sm text-gray-500">
                                 <span className="flex items-center gap-1">
                                   <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -260,8 +271,8 @@ function DashboardContent() {
                             </div>
                           </div>
                           <div className="flex gap-2 sm:flex-col">
-                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">Reschedule</Button>
-                            <Button variant="ghost" size="sm" className="flex-1 sm:flex-none text-error hover:text-error hover:bg-error/10">Cancel</Button>
+                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">{t('reschedule')}</Button>
+                            <Button variant="ghost" size="sm" className="flex-1 sm:flex-none text-error hover:text-error hover:bg-error/10">{t('cancel')}</Button>
                           </div>
                         </div>
                       </CardContent>
@@ -275,7 +286,7 @@ function DashboardContent() {
           {/* Past Appointments */}
           {pastAppointments.length > 0 && (
             <section>
-              <h2 className="text-h2 text-gray-900 mb-4">Recent History</h2>
+              <h2 className="text-h2 text-gray-900 mb-4">{t('pastAppointments')}</h2>
               <div className="space-y-4">
                 {pastAppointments.map((apt) => {
                   const dateParts = getDateParts(apt.appointment_date)
@@ -290,16 +301,16 @@ function DashboardContent() {
                             </div>
                             <div>
                               <div className="flex items-center gap-2 mb-1">
-                                <h3 className="text-label text-gray-900">{apt.hospital?.name || 'Hospital'}</h3>
+                                <h3 className="text-label text-gray-900">{apt.hospital?.name || tBooking('confirmation.hospital')}</h3>
                                 <Badge variant={statusColors[apt.status]}>
-                                  {apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}
+                                  {getStatusLabel(apt.status)}
                                 </Badge>
                               </div>
-                              <p className="text-body-sm text-gray-600">{apt.department?.name || 'Department'}</p>
+                              <p className="text-body-sm text-gray-600">{apt.department?.name || tBooking('confirmation.department')}</p>
                               <p className="text-body-sm text-gray-500 mt-1">Ref: {apt.reference_number}</p>
                             </div>
                           </div>
-                          <Button variant="outline" size="sm">Book Again</Button>
+                          <Button variant="outline" size="sm">{tBooking('success.bookAnother')}</Button>
                         </div>
                       </CardContent>
                     </Card>
@@ -308,7 +319,7 @@ function DashboardContent() {
               </div>
               <div className="mt-4 text-center">
                 <Link href="/dashboard/appointments">
-                  <Button variant="ghost">View All History →</Button>
+                  <Button variant="ghost">{tCommon('viewAll')} →</Button>
                 </Link>
               </div>
             </section>
@@ -320,7 +331,7 @@ function DashboardContent() {
           {/* Quick Actions */}
           <Card>
             <CardHeader>
-              <CardTitle>Quick Actions</CardTitle>
+              <CardTitle>{t('quickActions.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-3">
               <Link href="/dashboard/booking" className="block">
@@ -328,21 +339,21 @@ function DashboardContent() {
                   <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
                   </svg>
-                  Book New Appointment
+                  {t('quickActions.bookNew')}
                 </Button>
               </Link>
               <Button variant="outline" className="w-full justify-start">
                 <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
-                Talk to AI Assistant
+                {tNav('support')}
               </Button>
               <Link href="/dashboard/appointments" className="block">
                 <Button variant="outline" className="w-full justify-start">
                   <svg className="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                   </svg>
-                  View Full History
+                  {t('quickActions.viewHistory')}
                 </Button>
               </Link>
             </CardContent>
@@ -351,7 +362,7 @@ function DashboardContent() {
           {/* Profile Card */}
           <Card>
             <CardHeader>
-              <CardTitle>Your Profile</CardTitle>
+              <CardTitle>{tNav('profile')}</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-4 mb-4">
@@ -359,12 +370,12 @@ function DashboardContent() {
                   {user?.full_name ? user.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase() : 'U'}
                 </div>
                 <div>
-                  <p className="text-label text-gray-900">{user?.full_name || 'Patient'}</p>
-                  <p className="text-body-sm text-gray-500">Patient</p>
+                  <p className="text-label text-gray-900">{user?.full_name || tCommon('patient')}</p>
+                  <p className="text-body-sm text-gray-500">{tCommon('patient')}</p>
                 </div>
               </div>
               <Link href="/dashboard/profile">
-                <Button variant="outline" size="sm" className="w-full">Edit Profile</Button>
+                <Button variant="outline" size="sm" className="w-full">{tCommon('edit')} {tNav('profile')}</Button>
               </Link>
             </CardContent>
           </Card>
@@ -379,10 +390,10 @@ function DashboardContent() {
                   </svg>
                 </div>
                 <div>
-                  <h3 className="text-label text-gray-900">Need Help?</h3>
-                  <p className="text-body-sm text-gray-600 mb-3">Our support team is here to assist you with any questions.</p>
+                  <h3 className="text-label text-gray-900">{tNav('helpCenter')}</h3>
+                  <p className="text-body-sm text-gray-600 mb-3">{tNav('support')}</p>
                   <Link href="/dashboard/support">
-                    <Button variant="link" className="p-0 h-auto">Contact Support →</Button>
+                    <Button variant="link" className="p-0 h-auto">{tNav('contact')} →</Button>
                   </Link>
                 </div>
               </div>

@@ -15,25 +15,15 @@ export default function SupportPage() {
   })
   const [isSubmitting, setIsSubmitting] = React.useState(false)
 
-  // Mock support tickets
-  const tickets = [
-    {
-      id: 'TKT-001',
-      subject: 'Unable to reschedule appointment',
-      category: 'Booking Issue',
-      status: 'resolved',
-      createdAt: '2026-01-28',
-      lastUpdate: '2026-01-29',
-    },
-    {
-      id: 'TKT-002',
-      subject: 'SMS confirmation not received',
-      category: 'Notifications',
-      status: 'in_progress',
-      createdAt: '2026-02-01',
-      lastUpdate: '2026-02-02',
-    },
-  ]
+  // Empty tickets array - will be fetched from database when support_tickets table is created
+  const tickets: {
+    id: string
+    subject: string
+    category: string
+    status: string
+    createdAt: string
+    lastUpdate: string
+  }[] = []
 
   const quickHelp = [
     {

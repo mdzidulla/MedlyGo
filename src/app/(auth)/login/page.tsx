@@ -3,6 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -10,6 +11,9 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function LoginPage() {
   const router = useRouter()
+  const t = useTranslations('auth.login')
+  const tErrors = useTranslations('errors')
+
   const [email, setEmail] = React.useState('')
   const [password, setPassword] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(false)
@@ -34,7 +38,7 @@ export default function LoginPage() {
         router.refresh()
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(tErrors('unexpectedError'))
     } finally {
       setIsLoading(false)
     }
@@ -57,7 +61,7 @@ export default function LoginPage() {
         setError(error.message)
       }
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(tErrors('unexpectedError'))
     } finally {
       setIsLoading(false)
     }
@@ -66,9 +70,9 @@ export default function LoginPage() {
   return (
     <Card className="shadow-card-hover">
       <CardHeader className="text-center">
-        <CardTitle className="text-h1">Welcome Back</CardTitle>
+        <CardTitle className="text-h1">{t('title')}</CardTitle>
         <CardDescription className="text-body">
-          Sign in to manage your appointments
+          {t('subtitle')}
         </CardDescription>
       </CardHeader>
       <CardContent>
@@ -80,18 +84,18 @@ export default function LoginPage() {
           )}
 
           <Input
-            label="Email or Phone Number"
+            label={t('emailLabel')}
             type="text"
-            placeholder="Enter your email or phone"
+            placeholder={t('emailLabel')}
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
           />
 
           <Input
-            label="Password"
+            label={t('passwordLabel')}
             type="password"
-            placeholder="Enter your password"
+            placeholder={t('passwordLabel')}
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             required
@@ -102,7 +106,7 @@ export default function LoginPage() {
               href="/forgot-password"
               className="text-body-sm text-primary hover:underline"
             >
-              Forgot password?
+              {t('forgotPassword')}
             </Link>
           </div>
 
@@ -112,7 +116,7 @@ export default function LoginPage() {
             size="lg"
             isLoading={isLoading}
           >
-            Sign In
+            {t('loginButton')}
           </Button>
         </form>
 
@@ -121,7 +125,7 @@ export default function LoginPage() {
             <span className="w-full border-t border-gray-300" />
           </div>
           <div className="relative flex justify-center text-body-sm">
-            <span className="bg-white px-4 text-gray-500">Or continue with</span>
+            <span className="bg-white px-4 text-gray-500">{t('orContinueWith')}</span>
           </div>
         </div>
 
@@ -158,15 +162,15 @@ export default function LoginPage() {
               <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 18h.01M8 21h8a2 2 0 002-2V5a2 2 0 00-2-2H8a2 2 0 00-2 2v14a2 2 0 002 2z" />
               </svg>
-              Phone OTP
+              {t('phoneButton')}
             </Button>
           </Link>
         </div>
 
         <p className="mt-6 text-center text-body-sm text-gray-600">
-          Don&apos;t have an account?{' '}
+          {t('noAccount')}{' '}
           <Link href="/signup" className="text-primary font-medium hover:underline">
-            Sign Up
+            {t('signupLink')}
           </Link>
         </p>
       </CardContent>

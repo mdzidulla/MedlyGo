@@ -41,13 +41,13 @@ export function PublicHeader() {
               href="/about"
               className="text-body-sm text-gray-600 hover:text-primary transition-colors"
             >
-              About Us
+              {t('about')}
             </Link>
             <Link
               href="/contact"
               className="text-body-sm text-gray-600 hover:text-primary transition-colors"
             >
-              Contact
+              {t('contact')}
             </Link>
           </nav>
 
@@ -103,14 +103,14 @@ export function PublicHeader() {
                 className="px-4 py-2 text-body text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                About Us
+                {t('about')}
               </Link>
               <Link
                 href="/contact"
                 className="px-4 py-2 text-body text-gray-600 hover:text-primary hover:bg-gray-50 rounded-lg transition-colors"
                 onClick={() => setIsMenuOpen(false)}
               >
-                Contact
+                {t('contact')}
               </Link>
               <div className="border-t border-gray-200 my-2" />
               <Link href="/login" className="px-4">
