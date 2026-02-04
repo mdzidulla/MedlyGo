@@ -105,9 +105,12 @@ export default function ResetPasswordPage() {
                 Your password has been successfully reset. You will be redirected to the login page shortly.
               </p>
 
-              <Button asChild className="w-full">
-                <Link href="/login">Go to Login</Link>
-              </Button>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center w-full h-11 px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-all"
+              >
+                Go to Login
+              </Link>
             </CardContent>
           </Card>
         </main>
