@@ -1,0 +1,267 @@
+{
+  "common": {
+    "appName": "MedlyGo",
+    "tagline": "Your Health, Our Priority",
+    "loading": "Loading...",
+    "error": "Something went wrong",
+    "retry": "Try again",
+    "cancel": "Cancel",
+    "confirm": "Confirm",
+    "save": "Save",
+    "delete": "Delete",
+    "edit": "Edit",
+    "back": "Back",
+    "next": "Next",
+    "previous": "Previous",
+    "submit": "Submit",
+    "search": "Search",
+    "close": "Close",
+    "yes": "Yes",
+    "no": "No"
+  },
+  "nav": {
+    "home": "Home",
+    "bookAppointment": "Book Appointment",
+    "myAppointments": "My Appointments",
+    "dashboard": "Dashboard",
+    "profile": "Profile",
+    "settings": "Settings",
+    "logout": "Logout",
+    "login": "Login",
+    "signup": "Sign Up"
+  },
+  "home": {
+    "hero": {
+      "title": "Skip the Queue, Book Your Hospital Appointment Online",
+      "subtitle": "Access Ghana's public hospitals from anywhere. Book appointments at your convenience and receive timely reminders.",
+      "searchPlaceholder": "Search hospitals, departments, or locations...",
+      "ctaButton": "Book Now"
+    },
+    "howItWorks": {
+      "title": "How It Works",
+      "step1": {
+        "title": "Search & Select",
+        "description": "Find your preferred hospital and department from our network of public hospitals across Ghana."
+      },
+      "step2": {
+        "title": "Choose Time",
+        "description": "View available time slots and pick the one that works best for your schedule."
+      },
+      "step3": {
+        "title": "Confirm Booking",
+        "description": "Receive instant confirmation via SMS and email with your appointment details."
+      },
+      "step4": {
+        "title": "Visit Hospital",
+        "description": "Show your booking reference at the hospital for quick check-in. No more long queues!"
+      }
+    },
+    "features": {
+      "title": "Why Choose MedlyGo?",
+      "free": {
+        "title": "Free to Use",
+        "description": "No booking fees. Only pay standard hospital consultation charges."
+      },
+      "reminders": {
+        "title": "Smart Reminders",
+        "description": "Get SMS and email reminders before your appointment so you never miss it."
+      },
+      "multilingual": {
+        "title": "Multiple Languages",
+        "description": "Available in English, Twi, Ga, Ewe, and Hausa for your convenience."
+      },
+      "support": {
+        "title": "24/7 AI Support",
+        "description": "Our AI assistant is always ready to help you find and book appointments."
+      }
+    }
+  },
+  "booking": {
+    "title": "Book an Appointment",
+    "steps": {
+      "hospital": "Select Hospital",
+      "department": "Choose Department",
+      "datetime": "Pick Date & Time",
+      "confirm": "Confirm Details"
+    },
+    "hospital": {
+      "title": "Select a Hospital",
+      "searchPlaceholder": "Search by hospital name or location",
+      "filterByRegion": "Filter by region",
+      "allRegions": "All Regions",
+      "noResults": "No hospitals found. Try a different search.",
+      "viewDetails": "View Details"
+    },
+    "department": {
+      "title": "Choose a Department",
+      "consultationFee": "Consultation Fee",
+      "avgWaitTime": "Average Wait Time",
+      "minutes": "minutes"
+    },
+    "datetime": {
+      "title": "Select Date and Time",
+      "selectDate": "Select a Date",
+      "selectTime": "Select a Time Slot",
+      "noSlotsAvailable": "No slots available for this date. Please try another date.",
+      "morning": "Morning",
+      "afternoon": "Afternoon"
+    },
+    "confirmation": {
+      "title": "Confirm Your Appointment",
+      "appointmentDetails": "Appointment Details",
+      "hospital": "Hospital",
+      "department": "Department",
+      "date": "Date",
+      "time": "Time",
+      "consultationFee": "Consultation Fee",
+      "patientDetails": "Patient Details",
+      "name": "Name",
+      "phone": "Phone",
+      "email": "Email",
+      "terms": "I agree to the cancellation policy and terms of service",
+      "confirmButton": "Confirm Booking",
+      "cancellationNote": "You can cancel or reschedule up to 4 hours before your appointment."
+    },
+    "success": {
+      "title": "Booking Confirmed!",
+      "message": "Your appointment has been successfully booked.",
+      "referenceNumber": "Reference Number",
+      "saveReference": "Please save this reference number for check-in at the hospital.",
+      "smsConfirmation": "A confirmation SMS has been sent to your phone.",
+      "addToCalendar": "Add to Calendar",
+      "viewAppointments": "View My Appointments",
+      "bookAnother": "Book Another Appointment"
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Good morning",
+      "afternoon": "Good afternoon",
+      "evening": "Good evening"
+    },
+    "upcomingAppointments": "Upcoming Appointments",
+    "pastAppointments": "Past Appointments",
+    "noUpcoming": "No upcoming appointments",
+    "noPast": "No past appointments",
+    "bookFirst": "Book your first appointment",
+    "viewDetails": "View Details",
+    "reschedule": "Reschedule",
+    "cancel": "Cancel",
+    "status": {
+      "scheduled": "Scheduled",
+      "confirmed": "Confirmed",
+      "completed": "Completed",
+      "cancelled": "Cancelled",
+      "noShow": "No Show"
+    },
+    "quickActions": {
+      "title": "Quick Actions",
+      "bookNew": "Book New Appointment",
+      "findHospital": "Find a Hospital",
+      "viewHistory": "View History"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Welcome Back",
+      "subtitle": "Sign in to manage your appointments",
+      "emailLabel": "Email or Phone",
+      "passwordLabel": "Password",
+      "forgotPassword": "Forgot password?",
+      "loginButton": "Sign In",
+      "orContinueWith": "Or continue with",
+      "googleButton": "Continue with Google",
+      "phoneButton": "Sign in with Phone OTP",
+      "noAccount": "Don't have an account?",
+      "signupLink": "Sign up"
+    },
+    "signup": {
+      "title": "Create Account",
+      "subtitle": "Join MedlyGo to book appointments easily",
+      "steps": {
+        "phone": "Verify Phone",
+        "personal": "Personal Info",
+        "password": "Create Password",
+        "id": "Ghana Card (Optional)"
+      },
+      "phone": {
+        "title": "Verify Your Phone Number",
+        "description": "We'll send a verification code to your phone",
+        "phoneLabel": "Phone Number",
+        "phonePlaceholder": "+233 XX XXX XXXX",
+        "sendCode": "Send Verification Code"
+      },
+      "otp": {
+        "title": "Enter Verification Code",
+        "description": "We sent a code to {phone}",
+        "resend": "Resend code",
+        "resendIn": "Resend in {seconds}s"
+      },
+      "personal": {
+        "title": "Personal Information",
+        "fullNameLabel": "Full Name",
+        "emailLabel": "Email Address",
+        "dateOfBirthLabel": "Date of Birth",
+        "genderLabel": "Gender",
+        "genderOptions": {
+          "male": "Male",
+          "female": "Female",
+          "other": "Other"
+        }
+      },
+      "password": {
+        "title": "Create a Password",
+        "passwordLabel": "Password",
+        "confirmLabel": "Confirm Password",
+        "requirements": {
+          "length": "At least 8 characters",
+          "uppercase": "One uppercase letter",
+          "lowercase": "One lowercase letter",
+          "number": "One number"
+        }
+      },
+      "ghanaCard": {
+        "title": "Ghana Card (Optional)",
+        "description": "Adding your Ghana Card helps hospitals verify your identity faster",
+        "cardNumberLabel": "Ghana Card Number",
+        "skip": "Skip for now"
+      },
+      "haveAccount": "Already have an account?",
+      "loginLink": "Sign in",
+      "createButton": "Create Account"
+    }
+  },
+  "chat": {
+    "title": "MedlyBot",
+    "subtitle": "AI Assistant",
+    "online": "Online",
+    "placeholder": "Type your message...",
+    "suggestions": {
+      "findHospitals": "Find hospitals near me",
+      "bookAppointment": "Book an appointment",
+      "checkAppointment": "Check my appointment",
+      "departments": "What departments are available?"
+    },
+    "footer": "Powered by MedlyGo AI • For non-emergency appointments only"
+  },
+  "errors": {
+    "required": "This field is required",
+    "invalidEmail": "Please enter a valid email address",
+    "invalidPhone": "Please enter a valid phone number",
+    "passwordMismatch": "Passwords do not match",
+    "weakPassword": "Password is too weak",
+    "networkError": "Network error. Please check your connection.",
+    "serverError": "Server error. Please try again later.",
+    "notFound": "Not found",
+    "unauthorized": "Please log in to continue"
+  },
+  "footer": {
+    "copyright": "© {year} MedlyGo. All rights reserved.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Contact Us",
+    "about": "About",
+    "hospitals": "Partner Hospitals",
+    "faq": "FAQ"
+  }
+}

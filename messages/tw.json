@@ -1,0 +1,267 @@
+{
+  "common": {
+    "appName": "MedlyGo",
+    "tagline": "Wo Apɔmuden, Yɛn Botae",
+    "loading": "Ɛreload...",
+    "error": "Biribi akɔ basaa",
+    "retry": "Bɔ mmɔden bio",
+    "cancel": "Gyae",
+    "confirm": "Di mu dua",
+    "save": "Kora so",
+    "delete": "Popa",
+    "edit": "Sesa",
+    "back": "San kɔ",
+    "next": "Toa so",
+    "previous": "Kan no",
+    "submit": "Fa kɔ",
+    "search": "Hwehwɛ",
+    "close": "To mu",
+    "yes": "Aane",
+    "no": "Dabi"
+  },
+  "nav": {
+    "home": "Fie",
+    "bookAppointment": "Hyehyɛ Appointment",
+    "myAppointments": "Me Appointments",
+    "dashboard": "Dashboard",
+    "profile": "Me Ho Nsɛm",
+    "settings": "Nhyehyɛe",
+    "logout": "Pue",
+    "login": "Wura mu",
+    "signup": "Yi wo din"
+  },
+  "home": {
+    "hero": {
+      "title": "Twa Ɔhaw Kwan, Hyehyɛ Wo Ayaresabea Appointment Wɔ Intanɛt So",
+      "subtitle": "Kɔ Ghana ayaresabea wɔ baabiara. Hyehyɛ appointments wɔ bere a ɛyɛ wo de na nya nkaeɛ a ɛbɛba bere mu.",
+      "searchPlaceholder": "Hwehwɛ ayaresabea, departments, anaa beae...",
+      "ctaButton": "Hyehyɛ Seisei"
+    },
+    "howItWorks": {
+      "title": "Ɛyɛ Dɛn Na Ɛkɔ",
+      "step1": {
+        "title": "Hwehwɛ & Yi",
+        "description": "Hu ayaresabea ne department a wopɛ firi yɛn ayaresabea a ɛwɔ Ghana nyinaa."
+      },
+      "step2": {
+        "title": "Yi Bere",
+        "description": "Hwɛ bere a ɛwɔ hɔ na yi deɛ ɛyɛ wo nhyehyɛe."
+      },
+      "step3": {
+        "title": "Di mu Dua",
+        "description": "Nya nteɛso SMS ne email a wo appointment nsɛm wɔ mu."
+      },
+      "step4": {
+        "title": "Kɔ Ayaresabea",
+        "description": "Kyerɛ wo booking number wɔ ayaresabea hɔ ma wɔn gye wo ntɛm. Ɔhaw biara nni hɔ bio!"
+      }
+    },
+    "features": {
+      "title": "Adɛn Nti Na Wopɛ Sɛ Woyi MedlyGo?",
+      "free": {
+        "title": "Ɛyɛ Kwa",
+        "description": "Sika biara nni booking so. Tua ayaresabea consultation sika nko."
+      },
+      "reminders": {
+        "title": "Nkaeɛ Pa",
+        "description": "Nya SMS ne email nkaeɛ ansa na wo appointment adu nti worentu wo werɛ."
+      },
+      "multilingual": {
+        "title": "Kasa Pii",
+        "description": "Ɛwɔ English, Twi, Ga, Ewe, ne Hausa mu."
+      },
+      "support": {
+        "title": "AI Mmoa 24/7",
+        "description": "Yɛn AI boa aboa wo sɛ wuhu na wohyehyɛ appointments bere biara."
+      }
+    }
+  },
+  "booking": {
+    "title": "Hyehyɛ Appointment",
+    "steps": {
+      "hospital": "Yi Ayaresabea",
+      "department": "Yi Department",
+      "datetime": "Yi Da ne Bere",
+      "confirm": "Di mu Dua"
+    },
+    "hospital": {
+      "title": "Yi Ayaresabea",
+      "searchPlaceholder": "Hwehwɛ ayaresabea din anaa beae",
+      "filterByRegion": "Hwehwɛ region",
+      "allRegions": "Region Nyinaa",
+      "noResults": "Yɛanhu ayaresabea biara. Sɔ hwehwɛ foforɔ.",
+      "viewDetails": "Hwɛ Nsɛm Nyinaa"
+    },
+    "department": {
+      "title": "Yi Department",
+      "consultationFee": "Consultation Sika",
+      "avgWaitTime": "Bere a Wobɛtwɛn",
+      "minutes": "simma"
+    },
+    "datetime": {
+      "title": "Yi Da ne Bere",
+      "selectDate": "Yi Da",
+      "selectTime": "Yi Bere",
+      "noSlotsAvailable": "Bere biara nni da yi. Sɔ da foforɔ.",
+      "morning": "Anɔpa",
+      "afternoon": "Awia"
+    },
+    "confirmation": {
+      "title": "Di Wo Appointment Dua",
+      "appointmentDetails": "Appointment Nsɛm",
+      "hospital": "Ayaresabea",
+      "department": "Department",
+      "date": "Da",
+      "time": "Bere",
+      "consultationFee": "Consultation Sika",
+      "patientDetails": "Ɔyarefo Nsɛm",
+      "name": "Din",
+      "phone": "Fon",
+      "email": "Email",
+      "terms": "Me pene cancellation policy ne terms of service",
+      "confirmButton": "Di Booking Dua",
+      "cancellationNote": "Wubetumi agyae anaa asesa bere biara kosi nnɔnhwere 4 ansa na wo appointment adu."
+    },
+    "success": {
+      "title": "Wɔadi Booking Dua!",
+      "message": "Wɔahyehyɛ wo appointment yie.",
+      "referenceNumber": "Reference Number",
+      "saveReference": "Kora reference number yi ma check-in wɔ ayaresabea.",
+      "smsConfirmation": "Yɛde confirmation SMS abɛ wo fon so.",
+      "addToCalendar": "Fa Gu Kalenda Mu",
+      "viewAppointments": "Hwɛ Me Appointments",
+      "bookAnother": "Hyehyɛ Appointment Foforɔ"
+    }
+  },
+  "dashboard": {
+    "greeting": {
+      "morning": "Maakye",
+      "afternoon": "Maaha",
+      "evening": "Maadwo"
+    },
+    "upcomingAppointments": "Appointments a Ɛreba",
+    "pastAppointments": "Appointments a Atwam",
+    "noUpcoming": "Appointment biara nni hɔ a ɛreba",
+    "noPast": "Appointment biara nni hɔ a atwam",
+    "bookFirst": "Hyehyɛ wo appointment a edi kan",
+    "viewDetails": "Hwɛ Nsɛm",
+    "reschedule": "Sesa Bere",
+    "cancel": "Gyae",
+    "status": {
+      "scheduled": "Wɔahyehyɛ",
+      "confirmed": "Wɔadi Dua",
+      "completed": "Awie",
+      "cancelled": "Wɔagyae",
+      "noShow": "Wamba"
+    },
+    "quickActions": {
+      "title": "Nneɛma Ntɛm",
+      "bookNew": "Hyehyɛ Appointment Foforɔ",
+      "findHospital": "Hwehwɛ Ayaresabea",
+      "viewHistory": "Hwɛ Asɛm a Atwam"
+    }
+  },
+  "auth": {
+    "login": {
+      "title": "Akwaaba Bio",
+      "subtitle": "Wura mu na hwɛ wo appointments so",
+      "emailLabel": "Email anaa Fon",
+      "passwordLabel": "Password",
+      "forgotPassword": "Wowerɛ wo password?",
+      "loginButton": "Wura Mu",
+      "orContinueWith": "Anaa toa so de",
+      "googleButton": "Toa so de Google",
+      "phoneButton": "Wura mu de Fon OTP",
+      "noAccount": "Wonni account?",
+      "signupLink": "Yi wo din"
+    },
+    "signup": {
+      "title": "Yi Account",
+      "subtitle": "Bɛka MedlyGo ho na hyehyɛ appointments mmerɛw so",
+      "steps": {
+        "phone": "Fon Verification",
+        "personal": "Wo Ho Nsɛm",
+        "password": "Yi Password",
+        "id": "Ghana Card (Ɛnyɛ Dɛ)"
+      },
+      "phone": {
+        "title": "Verify Wo Fon Number",
+        "description": "Yɛbɛma verification code akɔ wo fon so",
+        "phoneLabel": "Fon Number",
+        "phonePlaceholder": "+233 XX XXX XXXX",
+        "sendCode": "Mena Verification Code"
+      },
+      "otp": {
+        "title": "Hyɛ Verification Code",
+        "description": "Yɛde code abɛ {phone}",
+        "resend": "San mena code",
+        "resendIn": "San mena wɔ {seconds}s mu"
+      },
+      "personal": {
+        "title": "Wo Ho Nsɛm",
+        "fullNameLabel": "Din Nyinaa",
+        "emailLabel": "Email Address",
+        "dateOfBirthLabel": "Wo Awoda",
+        "genderLabel": "Ɔbaa anaa Ɔbarima",
+        "genderOptions": {
+          "male": "Ɔbarima",
+          "female": "Ɔbaa",
+          "other": "Foforɔ"
+        }
+      },
+      "password": {
+        "title": "Yi Password",
+        "passwordLabel": "Password",
+        "confirmLabel": "Di Password Dua",
+        "requirements": {
+          "length": "Nkyerɛwde 8 paa",
+          "uppercase": "Nkyerɛwde kɛse biako",
+          "lowercase": "Nkyerɛwde ketewa biako",
+          "number": "Nɔma biako"
+        }
+      },
+      "ghanaCard": {
+        "title": "Ghana Card (Ɛnyɛ Dɛ)",
+        "description": "Ghana Card de boa ma ayaresabea hu wo ntɛm",
+        "cardNumberLabel": "Ghana Card Number",
+        "skip": "Twa mu seisei"
+      },
+      "haveAccount": "Wowɔ account dada?",
+      "loginLink": "Wura mu",
+      "createButton": "Yi Account"
+    }
+  },
+  "chat": {
+    "title": "MedlyBot",
+    "subtitle": "AI Oboafo",
+    "online": "Ɔwɔ hɔ",
+    "placeholder": "Kyerɛw wo nsɛm...",
+    "suggestions": {
+      "findHospitals": "Hwehwɛ ayaresabea a ɛbɛn me",
+      "bookAppointment": "Hyehyɛ appointment",
+      "checkAppointment": "Hwɛ me appointment",
+      "departments": "Departments bɛn na ɛwɔ hɔ?"
+    },
+    "footer": "MedlyGo AI na ɛhyɛ mu ahoɔden • Emergency appointments nko"
+  },
+  "errors": {
+    "required": "Ɛsɛ sɛ wohyɛ field yi mu",
+    "invalidEmail": "Hyɛ email address a ɛyɛ",
+    "invalidPhone": "Hyɛ fon number a ɛyɛ",
+    "passwordMismatch": "Password abiɛsa nni pɛ",
+    "weakPassword": "Password no nyɛ den",
+    "networkError": "Network asɛm. Hwɛ wo connection.",
+    "serverError": "Server asɛm. Sɔ bio akyiri.",
+    "notFound": "Yɛanhu",
+    "unauthorized": "Wura mu na toa so"
+  },
+  "footer": {
+    "copyright": "© {year} MedlyGo. Aho kwan nyinaa wɔ hɔ.",
+    "privacy": "Privacy Policy",
+    "terms": "Terms of Service",
+    "contact": "Frɛ Yɛn",
+    "about": "Yɛn Ho",
+    "hospitals": "Yɛn Ayaresabea",
+    "faq": "Nsɛmmisa"
+  }
+}
