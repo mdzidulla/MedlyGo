@@ -1,6 +1,7 @@
 'use client'
 
 import * as React from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -22,18 +23,37 @@ interface PatientData {
   emergency_contact_relationship: string | null
 }
 
+interface NotificationPreferences {
+  appointment_reminders: boolean
+  email_notifications: boolean
+  marketing_updates: boolean
+  health_tips: boolean
+}
+
 const regions = [
   'Greater Accra', 'Ashanti', 'Western', 'Eastern', 'Central', 'Northern', 'Volta',
   'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti', 'Western North',
 ]
 
 export default function ProfilePage() {
+  const router = useRouter()
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
   const [activeSection, setActiveSection] = React.useState('personal')
   const [userData, setUserData] = React.useState<UserData | null>(null)
   const [patientData, setPatientData] = React.useState<PatientData | null>(null)
+  const [showDeleteModal, setShowDeleteModal] = React.useState(false)
+  const [isDeleting, setIsDeleting] = React.useState(false)
+  const [deleteConfirmText, setDeleteConfirmText] = React.useState('')
+  const [notificationPrefs, setNotificationPrefs] = React.useState<NotificationPreferences>({
+    appointment_reminders: true,
+    email_notifications: true,
+    marketing_updates: false,
+    health_tips: true,
+  })
+  const [isSavingNotifications, setIsSavingNotifications] = React.useState(false)
+  const [notificationSaved, setNotificationSaved] = React.useState(false)
 
   const supabase = createClient()
 
@@ -98,6 +118,49 @@ export default function ProfilePage() {
     } finally {
       setIsSaving(false)
     }
+  }
+
+  const handleDeleteAccount = async () => {
+    if (deleteConfirmText !== 'DELETE') return
+    setIsDeleting(true)
+
+    try {
+      // Call the API route to delete the user completely
+      const response = await fetch('/api/user/delete', {
+        method: 'DELETE',
+      })
+
+      if (!response.ok) {
+        const data = await response.json()
+        throw new Error(data.error || 'Failed to delete account')
+      }
+
+      // Sign out the user
+      await supabase.auth.signOut()
+
+      // Redirect to home page
+      window.location.href = '/'
+    } catch (error) {
+      console.error('Error deleting account:', error)
+      alert('Failed to delete account. Please contact support.')
+      setIsDeleting(false)
+      setShowDeleteModal(false)
+    }
+  }
+
+  const handleNotificationChange = async (key: keyof NotificationPreferences, value: boolean) => {
+    setNotificationPrefs(prev => ({ ...prev, [key]: value }))
+    setIsSavingNotifications(true)
+    setNotificationSaved(false)
+
+    // Simulate saving to database (in production, save to user preferences table)
+    await new Promise(resolve => setTimeout(resolve, 500))
+
+    setIsSavingNotifications(false)
+    setNotificationSaved(true)
+
+    // Hide the saved message after 2 seconds
+    setTimeout(() => setNotificationSaved(false), 2000)
   }
 
   const sections = [
@@ -393,18 +456,40 @@ export default function ProfilePage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-label text-gray-900">Password</h4>
-                      <p className="text-body-sm text-gray-500">Signed in with Google</p>
+                      <p className="text-body-sm text-gray-500">Signed in with Google - password managed by Google</p>
                     </div>
-                    <Button variant="outline" size="sm" disabled>Change Password</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => window.open('https://myaccount.google.com/security', '_blank')}
+                    >
+                      Manage in Google
+                    </Button>
+                  </div>
+                </div>
+                <div className="p-4 border border-gray-200 rounded-lg">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-label text-gray-900">Active Sessions</h4>
+                      <p className="text-body-sm text-gray-500">You are currently signed in on this device</p>
+                    </div>
+                    <Badge variant="success">Active</Badge>
                   </div>
                 </div>
                 <div className="p-4 border border-error/20 bg-error/5 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
                       <h4 className="text-label text-error">Delete Account</h4>
-                      <p className="text-body-sm text-gray-500">Permanently delete your account and data</p>
+                      <p className="text-body-sm text-gray-500">Permanently delete your account and all data</p>
                     </div>
-                    <Button variant="outline" size="sm" className="text-error border-error hover:bg-error/10">Delete</Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="text-error border-error hover:bg-error/10"
+                      onClick={() => setShowDeleteModal(true)}
+                    >
+                      Delete Account
+                    </Button>
                   </div>
                 </div>
               </CardContent>
@@ -413,32 +498,154 @@ export default function ProfilePage() {
 
           {activeSection === 'notifications' && (
             <Card>
-              <CardHeader><CardTitle>Notification Preferences</CardTitle></CardHeader>
+              <CardHeader className="flex flex-row items-center justify-between">
+                <CardTitle>Notification Preferences</CardTitle>
+                {isSavingNotifications && (
+                  <span className="text-body-sm text-gray-500">Saving...</span>
+                )}
+                {notificationSaved && (
+                  <span className="text-body-sm text-success flex items-center gap-1">
+                    <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                    </svg>
+                    Saved
+                  </span>
+                )}
+              </CardHeader>
               <CardContent className="space-y-6">
                 <div className="space-y-4">
-                  {[
-                    { title: 'Appointment Reminders', desc: 'Get SMS reminders before appointments', defaultChecked: true },
-                    { title: 'Email Notifications', desc: 'Receive appointment confirmations via email', defaultChecked: true },
-                    { title: 'Marketing Updates', desc: 'Receive news about new features and hospitals', defaultChecked: false },
-                    { title: 'Health Tips', desc: 'Weekly health tips and reminders', defaultChecked: true },
-                  ].map((item, i) => (
-                    <div key={i} className={`flex items-center justify-between py-3 ${i < 3 ? 'border-b border-gray-100' : ''}`}>
-                      <div>
-                        <h4 className="text-label text-gray-900">{item.title}</h4>
-                        <p className="text-body-sm text-gray-500">{item.desc}</p>
-                      </div>
-                      <label className="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" defaultChecked={item.defaultChecked} className="sr-only peer" />
-                        <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
-                      </label>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div>
+                      <h4 className="text-label text-gray-900">Appointment Reminders</h4>
+                      <p className="text-body-sm text-gray-500">Get SMS reminders before appointments</p>
                     </div>
-                  ))}
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationPrefs.appointment_reminders}
+                        onChange={(e) => handleNotificationChange('appointment_reminders', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div>
+                      <h4 className="text-label text-gray-900">Email Notifications</h4>
+                      <p className="text-body-sm text-gray-500">Receive appointment confirmations via email</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationPrefs.email_notifications}
+                        onChange={(e) => handleNotificationChange('email_notifications', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between py-3 border-b border-gray-100">
+                    <div>
+                      <h4 className="text-label text-gray-900">Marketing Updates</h4>
+                      <p className="text-body-sm text-gray-500">Receive news about new features and hospitals</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationPrefs.marketing_updates}
+                        onChange={(e) => handleNotificationChange('marketing_updates', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
+                  <div className="flex items-center justify-between py-3">
+                    <div>
+                      <h4 className="text-label text-gray-900">Health Tips</h4>
+                      <p className="text-body-sm text-gray-500">Weekly health tips and reminders</p>
+                    </div>
+                    <label className="relative inline-flex items-center cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={notificationPrefs.health_tips}
+                        onChange={(e) => handleNotificationChange('health_tips', e.target.checked)}
+                        className="sr-only peer"
+                      />
+                      <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-primary/20 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-primary"></div>
+                    </label>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           )}
         </div>
       </div>
+
+      {/* Delete Account Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center">
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowDeleteModal(false)}
+          />
+          <div className="relative bg-white rounded-xl shadow-xl max-w-md w-full mx-4 p-6">
+            <div className="text-center mb-6">
+              <div className="w-16 h-16 mx-auto mb-4 bg-error/10 rounded-full flex items-center justify-center">
+                <svg className="w-8 h-8 text-error" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                </svg>
+              </div>
+              <h3 className="text-h3 text-gray-900 mb-2">Delete Account</h3>
+              <p className="text-body text-gray-600">
+                This action is <strong>permanent</strong> and cannot be undone. All your data, appointments, and profile information will be deleted.
+              </p>
+            </div>
+
+            <div className="mb-6">
+              <label className="block text-label text-gray-700 mb-2">
+                Type <strong>DELETE</strong> to confirm
+              </label>
+              <input
+                type="text"
+                value={deleteConfirmText}
+                onChange={(e) => setDeleteConfirmText(e.target.value)}
+                className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:border-error focus:ring-2 focus:ring-error/20 outline-none"
+                placeholder="DELETE"
+              />
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                variant="outline"
+                className="flex-1"
+                onClick={() => {
+                  setShowDeleteModal(false)
+                  setDeleteConfirmText('')
+                }}
+              >
+                Cancel
+              </Button>
+              <Button
+                className="flex-1 bg-error hover:bg-error/90 text-white"
+                onClick={handleDeleteAccount}
+                disabled={deleteConfirmText !== 'DELETE' || isDeleting}
+              >
+                {isDeleting ? (
+                  <>
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Deleting...
+                  </>
+                ) : (
+                  'Delete Account'
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

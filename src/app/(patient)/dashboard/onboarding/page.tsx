@@ -126,14 +126,20 @@ export default function OnboardingPage() {
         return
       }
 
-      // Update the users table with phone
-      // Using type assertion to bypass RLS-related type inference issues
+      // First, ensure user exists in users table (upsert to handle both new and existing)
+      const userData = {
+        id: user.id,
+        email: user.email,
+        full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
+        avatar_url: user.user_metadata?.avatar_url || null,
+        phone: formData.phone,
+      }
+
       const { error: userError } = await (supabase
         .from('users') as ReturnType<typeof supabase.from>)
-        .update({
-          phone: formData.phone,
+        .upsert(userData, {
+          onConflict: 'id',
         })
-        .eq('id', user.id)
 
       if (userError) throw userError
 
@@ -157,13 +163,11 @@ export default function OnboardingPage() {
 
       if (patientError) throw patientError
 
-      // Redirect to dashboard
-      router.push('/dashboard')
-      router.refresh()
+      // Redirect to dashboard using window.location for reliable navigation
+      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Error saving profile:', err)
       setError('Failed to save profile. Please try again.')
-    } finally {
       setIsSubmitting(false)
     }
   }
