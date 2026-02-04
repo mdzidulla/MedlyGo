@@ -347,5 +347,90 @@
     "about": "About Us",
     "hospitals": "Partner Hospitals",
     "faq": "FAQ"
+  },
+  "support": {
+    "title": "Support Center",
+    "subtitle": "How can we help you today?",
+    "quickHelp": {
+      "booking": {
+        "title": "Booking Help",
+        "description": "Learn how to book, reschedule, or cancel appointments"
+      },
+      "sms": {
+        "title": "SMS Issues",
+        "description": "Not receiving confirmation or reminder messages"
+      },
+      "account": {
+        "title": "Account Help",
+        "description": "Profile updates, password reset, and account settings"
+      },
+      "hospital": {
+        "title": "Hospital Info",
+        "description": "Hospital locations, departments, and services"
+      }
+    },
+    "contact": {
+      "title": "Contact Us",
+      "call": "Call Us",
+      "callDesc": "Mon-Fri, 8am-6pm",
+      "whatsapp": "WhatsApp",
+      "whatsappDesc": "Quick responses",
+      "email": "Email Us",
+      "emailDesc": "We reply within 24hrs"
+    },
+    "tabs": {
+      "quickHelp": "Quick Help",
+      "myTickets": "My Tickets",
+      "newTicket": "New Ticket"
+    },
+    "faq": {
+      "title": "Frequently Asked Questions",
+      "q1": {
+        "question": "How do I book an appointment?",
+        "answer": "Click on 'Book Appointment' from your dashboard, select a hospital, choose a department, pick your preferred date and time, then confirm your booking."
+      },
+      "q2": {
+        "question": "Can I reschedule my appointment?",
+        "answer": "Yes, you can reschedule up to 4 hours before your appointment time. Go to 'My Appointments' and click 'Reschedule' on the appointment you want to change."
+      },
+      "q3": {
+        "question": "Why didn't I receive an SMS confirmation?",
+        "answer": "Please check that your phone number is correct in your profile. If the issue persists, contact our support team."
+      },
+      "q4": {
+        "question": "Is MedlyGo free to use?",
+        "answer": "Yes, MedlyGo is completely free. You only pay the standard consultation fees at the hospital."
+      }
+    },
+    "tickets": {
+      "noTickets": "No support tickets yet",
+      "noTicketsDesc": "When you submit a support request, it will appear here",
+      "created": "Created",
+      "lastUpdate": "Last Update",
+      "status": {
+        "open": "Open",
+        "inProgress": "In Progress",
+        "resolved": "Resolved",
+        "closed": "Closed"
+      }
+    },
+    "newTicket": {
+      "title": "Submit a Support Request",
+      "subject": "Subject",
+      "subjectPlaceholder": "Brief description of your issue",
+      "category": "Category",
+      "categoryPlaceholder": "Select a category",
+      "categories": {
+        "booking": "Booking Issues",
+        "account": "Account Problems",
+        "sms": "SMS/Notifications",
+        "hospital": "Hospital Information",
+        "other": "Other"
+      },
+      "message": "Message",
+      "messagePlaceholder": "Please describe your issue in detail...",
+      "submit": "Submit Ticket",
+      "submitting": "Submitting..."
+    }
   }
 }

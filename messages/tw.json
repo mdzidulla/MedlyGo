@@ -347,5 +347,90 @@
     "about": "Yɛn Ho",
     "hospitals": "Yɛn Ayaresabea",
     "faq": "Nsɛmmisa"
+  },
+  "support": {
+    "title": "Mmoa Center",
+    "subtitle": "Ɛyɛ dɛn na yɛbɛboa wo ɛnnɛ?",
+    "quickHelp": {
+      "booking": {
+        "title": "Booking Mmoa",
+        "description": "Sua sɛnea wobɛhyehyɛ, asesa, anaa agyae appointments"
+      },
+      "sms": {
+        "title": "SMS Nsɛm",
+        "description": "Sɛ worennya confirmation anaa nkaeɛ messages"
+      },
+      "account": {
+        "title": "Account Mmoa",
+        "description": "Profile nsesa, password reset, ne account nhyehyɛe"
+      },
+      "hospital": {
+        "title": "Ayaresabea Nsɛm",
+        "description": "Ayaresabea beae, departments, ne ɔsom"
+      }
+    },
+    "contact": {
+      "title": "Frɛ Yɛn",
+      "call": "Frɛ Yɛn",
+      "callDesc": "Dwoada-Fiada, 8am-6pm",
+      "whatsapp": "WhatsApp",
+      "whatsappDesc": "Mmuae ntɛm",
+      "email": "Email Yɛn",
+      "emailDesc": "Yɛbua wɔ nnɔnhwere 24 mu"
+    },
+    "tabs": {
+      "quickHelp": "Mmoa Ntɛm",
+      "myTickets": "Me Tickets",
+      "newTicket": "Ticket Foforɔ"
+    },
+    "faq": {
+      "title": "Nsɛmmisa a Wɔbisa Daa",
+      "q1": {
+        "question": "Ɛyɛ dɛn na mɛhyehyɛ appointment?",
+        "answer": "Klik 'Hyehyɛ Appointment' wɔ wo dashboard, yi ayaresabea, yi department, yi da ne bere a wopɛ, na di wo booking dua."
+      },
+      "q2": {
+        "question": "Metumi asesa me appointment bere?",
+        "answer": "Aane, wubetumi asesa kosi nnɔnhwere 4 ansa na wo appointment bere adu. Kɔ 'Me Appointments' na klik 'Sesa Bere' wɔ appointment a wopɛ asesa no so."
+      },
+      "q3": {
+        "question": "Adɛn nti na miannya SMS confirmation?",
+        "answer": "Hwɛ sɛ wo fon number yɛ pɛ wɔ wo profile mu. Sɛ ɛkɔ so ara a, frɛ yɛn mmoa team."
+      },
+      "q4": {
+        "question": "MedlyGo yɛ kwa?",
+        "answer": "Aane, MedlyGo yɛ kwa koraa. Wotua consultation sika a ɛwɔ ayaresabea hɔ nko."
+      }
+    },
+    "tickets": {
+      "noTickets": "Support tickets biara nni hɔ",
+      "noTicketsDesc": "Sɛ wode support request kɔ a, ɛbɛba ha",
+      "created": "Wɔyɛɛ no",
+      "lastUpdate": "Nsesa a Etwa To",
+      "status": {
+        "open": "Abue",
+        "inProgress": "Ɛrekɔ So",
+        "resolved": "Wɔasiesie",
+        "closed": "Wɔato Mu"
+      }
+    },
+    "newTicket": {
+      "title": "De Support Request Kɔ",
+      "subject": "Asɛmti",
+      "subjectPlaceholder": "Kyerɛ wo ɔhaw tiawa",
+      "category": "Ɔfa",
+      "categoryPlaceholder": "Yi ɔfa",
+      "categories": {
+        "booking": "Booking Nsɛm",
+        "account": "Account Nsɛm",
+        "sms": "SMS/Nkra",
+        "hospital": "Ayaresabea Nsɛm",
+        "other": "Foforɔ"
+      },
+      "message": "Nsɛm",
+      "messagePlaceholder": "Kyerɛ wo ɔhaw yie...",
+      "submit": "De Ticket Kɔ",
+      "submitting": "Ɛrekɔ..."
+    }
   }
 }

@@ -2,11 +2,17 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 export default function SupportPage() {
+  const t = useTranslations('support')
+  const tNav = useTranslations('nav')
+  const tCommon = useTranslations('common')
+  const tFooter = useTranslations('footer')
+
   const [activeTab, setActiveTab] = React.useState<'help' | 'tickets' | 'new'>('help')
   const [ticketForm, setTicketForm] = React.useState({
     subject: '',
@@ -32,8 +38,8 @@ export default function SupportPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
         </svg>
       ),
-      title: 'Booking Help',
-      description: 'Learn how to book, reschedule, or cancel appointments',
+      title: t('quickHelp.booking.title'),
+      description: t('quickHelp.booking.description'),
       link: '/help#booking',
     },
     {
@@ -42,8 +48,8 @@ export default function SupportPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
         </svg>
       ),
-      title: 'SMS & Notifications',
-      description: 'Understanding SMS confirmations and reminders',
+      title: t('quickHelp.sms.title'),
+      description: t('quickHelp.sms.description'),
       link: '/help#notifications',
     },
     {
@@ -52,8 +58,8 @@ export default function SupportPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
         </svg>
       ),
-      title: 'Account Issues',
-      description: 'Profile updates, password reset, and account settings',
+      title: t('quickHelp.account.title'),
+      description: t('quickHelp.account.description'),
       link: '/help#account',
     },
     {
@@ -62,8 +68,8 @@ export default function SupportPage() {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
         </svg>
       ),
-      title: 'Hospital Information',
-      description: 'Hospital services, visiting hours, and preparation',
+      title: t('quickHelp.hospital.title'),
+      description: t('quickHelp.hospital.description'),
       link: '/help#hospitals',
     },
   ]
@@ -95,10 +101,8 @@ export default function SupportPage() {
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       {/* Header */}
       <div className="mb-8">
-        <h1 className="text-h1 text-gray-900">Support Center</h1>
-        <p className="text-body text-gray-600">
-          Get help with your account, bookings, and more
-        </p>
+        <h1 className="text-h1 text-gray-900">{t('title')}</h1>
+        <p className="text-body text-gray-600">{t('subtitle')}</p>
       </div>
 
       {/* Contact Methods */}
@@ -111,7 +115,7 @@ export default function SupportPage() {
               </svg>
             </div>
             <div>
-              <p className="text-body-sm text-gray-600">Call Us</p>
+              <p className="text-body-sm text-gray-600">{t('contact.call')}</p>
               <p className="text-label text-gray-900">+233 30 123 4567</p>
             </div>
           </CardContent>
@@ -125,7 +129,7 @@ export default function SupportPage() {
               </svg>
             </div>
             <div>
-              <p className="text-body-sm text-gray-600">WhatsApp</p>
+              <p className="text-body-sm text-gray-600">{t('contact.whatsapp')}</p>
               <p className="text-label text-gray-900">+233 54 123 4567</p>
             </div>
           </CardContent>
@@ -139,7 +143,7 @@ export default function SupportPage() {
               </svg>
             </div>
             <div>
-              <p className="text-body-sm text-gray-600">Email</p>
+              <p className="text-body-sm text-gray-600">{t('contact.email')}</p>
               <p className="text-label text-gray-900">support@medlygo.com</p>
             </div>
           </CardContent>
@@ -156,7 +160,7 @@ export default function SupportPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          Quick Help
+          {t('tabs.quickHelp')}
         </button>
         <button
           onClick={() => setActiveTab('tickets')}
@@ -166,10 +170,10 @@ export default function SupportPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          My Tickets
-          {tickets.filter(t => t.status !== 'resolved').length > 0 && (
+          {t('tabs.myTickets')}
+          {tickets.filter(ticket => ticket.status !== 'resolved').length > 0 && (
             <span className="ml-2 px-2 py-0.5 text-xs bg-white/20 rounded-full">
-              {tickets.filter(t => t.status !== 'resolved').length}
+              {tickets.filter(ticket => ticket.status !== 'resolved').length}
             </span>
           )}
         </button>
@@ -181,7 +185,7 @@ export default function SupportPage() {
               : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
           }`}
         >
-          New Ticket
+          {t('tabs.newTicket')}
         </button>
       </div>
 
@@ -208,62 +212,54 @@ export default function SupportPage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>Frequently Asked Questions</CardTitle>
+              <CardTitle>{t('faq.title')}</CardTitle>
             </CardHeader>
             <CardContent className="space-y-4">
               <details className="group">
                 <summary className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-100">
-                  <span className="text-label text-gray-900">How do I book an appointment?</span>
+                  <span className="text-label text-gray-900">{t('faq.q1.question')}</span>
                   <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="text-body text-gray-600 py-3">
-                  Go to the Booking page, select your preferred hospital and department, choose an available time slot, and confirm your booking. You&apos;ll receive an SMS confirmation.
-                </p>
+                <p className="text-body text-gray-600 py-3">{t('faq.q1.answer')}</p>
               </details>
 
               <details className="group">
                 <summary className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-100">
-                  <span className="text-label text-gray-900">How can I cancel or reschedule?</span>
+                  <span className="text-label text-gray-900">{t('faq.q2.question')}</span>
                   <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="text-body text-gray-600 py-3">
-                  Visit &quot;My Appointments&quot; in your dashboard, find the appointment you want to change, and click &quot;Reschedule&quot; or &quot;Cancel&quot;. Please try to do this at least 24 hours in advance.
-                </p>
+                <p className="text-body text-gray-600 py-3">{t('faq.q2.answer')}</p>
               </details>
 
               <details className="group">
                 <summary className="flex items-center justify-between cursor-pointer py-3 border-b border-gray-100">
-                  <span className="text-label text-gray-900">I didn&apos;t receive my SMS confirmation</span>
+                  <span className="text-label text-gray-900">{t('faq.q3.question')}</span>
                   <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="text-body text-gray-600 py-3">
-                  Check that your phone number is correct in your profile settings. SMS may take a few minutes to arrive. If you still don&apos;t receive it, contact our support team.
-                </p>
+                <p className="text-body text-gray-600 py-3">{t('faq.q3.answer')}</p>
               </details>
 
               <details className="group">
                 <summary className="flex items-center justify-between cursor-pointer py-3">
-                  <span className="text-label text-gray-900">Is MedlyGo free to use?</span>
+                  <span className="text-label text-gray-900">{t('faq.q4.question')}</span>
                   <svg className="w-5 h-5 text-gray-500 group-open:rotate-180 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                   </svg>
                 </summary>
-                <p className="text-body text-gray-600 py-3">
-                  Yes! MedlyGo is completely free for patients. Hospital fees and medical costs are separate and paid directly to the hospital.
-                </p>
+                <p className="text-body text-gray-600 py-3">{t('faq.q4.answer')}</p>
               </details>
             </CardContent>
           </Card>
 
           <div className="text-center">
             <Link href="/faq">
-              <Button variant="outline">View All FAQs</Button>
+              <Button variant="outline">{tFooter('faq')}</Button>
             </Link>
           </div>
         </div>
@@ -280,11 +276,9 @@ export default function SupportPage() {
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                   </svg>
                 </div>
-                <h3 className="text-h3 text-gray-900 mb-2">No support tickets</h3>
-                <p className="text-body text-gray-600 mb-4">
-                  You haven&apos;t submitted any support tickets yet.
-                </p>
-                <Button onClick={() => setActiveTab('new')}>Create New Ticket</Button>
+                <h3 className="text-h3 text-gray-900 mb-2">{t('tickets.noTickets')}</h3>
+                <p className="text-body text-gray-600 mb-4">{t('tickets.noTicketsDesc')}</p>
+                <Button onClick={() => setActiveTab('new')}>{t('tickets.createNew')}</Button>
               </CardContent>
             </Card>
           ) : (
@@ -303,15 +297,15 @@ export default function SupportPage() {
                       <p className="text-body-sm text-gray-500">{ticket.category}</p>
                     </div>
                     <div className="text-right">
-                      <p className="text-body-sm text-gray-500">Created</p>
+                      <p className="text-body-sm text-gray-500">{t('tickets.created')}</p>
                       <p className="text-body-sm text-gray-900">{ticket.createdAt}</p>
                     </div>
                   </div>
                   <div className="mt-4 pt-4 border-t border-gray-100 flex items-center justify-between">
                     <span className="text-body-sm text-gray-500">
-                      Last update: {ticket.lastUpdate}
+                      {t('tickets.lastUpdate')}: {ticket.lastUpdate}
                     </span>
-                    <Button variant="outline" size="sm">View Details</Button>
+                    <Button variant="outline" size="sm">{t('tickets.viewDetails')}</Button>
                   </div>
                 </CardContent>
               </Card>
@@ -324,49 +318,49 @@ export default function SupportPage() {
       {activeTab === 'new' && (
         <Card>
           <CardHeader>
-            <CardTitle>Submit a Support Ticket</CardTitle>
+            <CardTitle>{t('newTicket.title')}</CardTitle>
           </CardHeader>
           <CardContent>
             <form onSubmit={handleSubmitTicket} className="space-y-6">
               <div>
-                <label className="block text-label text-gray-700 mb-2">Subject *</label>
+                <label className="block text-label text-gray-700 mb-2">{t('newTicket.subject')} *</label>
                 <input
                   type="text"
                   required
                   value={ticketForm.subject}
                   onChange={(e) => setTicketForm({ ...ticketForm, subject: e.target.value })}
                   className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  placeholder="Brief description of your issue"
+                  placeholder={t('newTicket.subjectPlaceholder')}
                 />
               </div>
 
               <div>
-                <label className="block text-label text-gray-700 mb-2">Category *</label>
+                <label className="block text-label text-gray-700 mb-2">{t('newTicket.category')} *</label>
                 <select
                   required
                   value={ticketForm.category}
                   onChange={(e) => setTicketForm({ ...ticketForm, category: e.target.value })}
                   className="w-full h-12 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                 >
-                  <option value="">Select a category</option>
-                  <option value="booking">Booking Issue</option>
-                  <option value="account">Account Problem</option>
-                  <option value="notifications">SMS/Notifications</option>
-                  <option value="hospital">Hospital Information</option>
-                  <option value="payment">Payment/Billing</option>
-                  <option value="other">Other</option>
+                  <option value="">{t('newTicket.selectCategory')}</option>
+                  <option value="booking">{t('newTicket.categories.booking')}</option>
+                  <option value="account">{t('newTicket.categories.account')}</option>
+                  <option value="notifications">{t('newTicket.categories.notifications')}</option>
+                  <option value="hospital">{t('newTicket.categories.hospital')}</option>
+                  <option value="payment">{t('newTicket.categories.payment')}</option>
+                  <option value="other">{t('newTicket.categories.other')}</option>
                 </select>
               </div>
 
               <div>
-                <label className="block text-label text-gray-700 mb-2">Message *</label>
+                <label className="block text-label text-gray-700 mb-2">{t('newTicket.message')} *</label>
                 <textarea
                   required
                   rows={6}
                   value={ticketForm.message}
                   onChange={(e) => setTicketForm({ ...ticketForm, message: e.target.value })}
                   className="w-full px-4 py-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
-                  placeholder="Please describe your issue in detail..."
+                  placeholder={t('newTicket.messagePlaceholder')}
                 />
               </div>
 
@@ -378,14 +372,14 @@ export default function SupportPage() {
                         <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                         <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                       </svg>
-                      Submitting...
+                      {t('newTicket.submitting')}
                     </>
                   ) : (
-                    'Submit Ticket'
+                    t('newTicket.submit')
                   )}
                 </Button>
                 <Button type="button" variant="outline" onClick={() => setActiveTab('help')}>
-                  Cancel
+                  {tCommon('cancel')}
                 </Button>
               </div>
             </form>

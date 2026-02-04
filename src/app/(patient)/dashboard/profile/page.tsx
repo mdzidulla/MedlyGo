@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -30,13 +31,12 @@ interface NotificationPreferences {
   health_tips: boolean
 }
 
-const regions = [
-  'Greater Accra', 'Ashanti', 'Western', 'Eastern', 'Central', 'Northern', 'Volta',
-  'Upper East', 'Upper West', 'Bono', 'Bono East', 'Ahafo', 'Savannah', 'North East', 'Oti', 'Western North',
-]
-
 export default function ProfilePage() {
   const router = useRouter()
+  const t = useTranslations('profile')
+  const tNotifications = useTranslations('notifications')
+  const tCommon = useTranslations('common')
+
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
   const [isEditing, setIsEditing] = React.useState(false)
@@ -164,12 +164,12 @@ export default function ProfilePage() {
   }
 
   const sections = [
-    { id: 'personal', label: 'Personal Info', icon: '👤' },
-    { id: 'contact', label: 'Contact Details', icon: '📞' },
-    { id: 'medical', label: 'Medical Info', icon: '🏥' },
-    { id: 'emergency', label: 'Emergency Contact', icon: '🚨' },
-    { id: 'security', label: 'Security', icon: '🔒' },
-    { id: 'notifications', label: 'Notifications', icon: '🔔' },
+    { id: 'personal', label: t('personalInfo'), icon: '👤' },
+    { id: 'contact', label: t('contactDetails'), icon: '📞' },
+    { id: 'medical', label: t('medicalInfo'), icon: '🏥' },
+    { id: 'emergency', label: t('emergencyContact'), icon: '🚨' },
+    { id: 'security', label: t('security'), icon: '🔒' },
+    { id: 'notifications', label: t('notifications'), icon: '🔔' },
   ]
 
   if (isLoading) {
@@ -190,15 +190,11 @@ export default function ProfilePage() {
     return userData.full_name.split(' ').map(n => n[0]).join('').slice(0, 2).toUpperCase()
   }
 
-  const nameParts = userData?.full_name?.split(' ') || ['', '']
-  const firstName = nameParts[0] || ''
-  const lastName = nameParts.slice(1).join(' ') || ''
-
   return (
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="mb-8">
-        <h1 className="text-h1 text-gray-900">Profile Settings</h1>
-        <p className="text-body text-gray-600">Manage your personal information and preferences</p>
+        <h1 className="text-h1 text-gray-900">{t('title')}</h1>
+        <p className="text-body text-gray-600">{t('subtitle')}</p>
       </div>
 
       <div className="grid lg:grid-cols-4 gap-8">
@@ -209,9 +205,9 @@ export default function ProfilePage() {
                 <div className="w-24 h-24 mx-auto bg-primary-100 rounded-full flex items-center justify-center mb-3">
                   <span className="text-3xl font-bold text-primary">{getInitials()}</span>
                 </div>
-                <h3 className="text-label text-gray-900">{userData?.full_name || 'Patient'}</h3>
+                <h3 className="text-label text-gray-900">{userData?.full_name || tCommon('patient')}</h3>
                 <p className="text-body-sm text-gray-500">{userData?.email}</p>
-                <Badge variant="success" className="mt-2">Verified</Badge>
+                <Badge variant="success" className="mt-2">{t('verified')}</Badge>
               </div>
               <nav className="space-y-1">
                 {sections.map((section) => (
@@ -235,24 +231,24 @@ export default function ProfilePage() {
           {activeSection === 'personal' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Personal Information</CardTitle>
+                <CardTitle>{t('personalInfo')}</CardTitle>
                 {!isEditing ? (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>{tCommon('edit')}</Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>{tCommon('cancel')}</Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? tNotifications('saving') : tCommon('save')}</Button>
                   </div>
                 )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Full Name</label>
-                    <p className="text-body text-gray-900">{userData?.full_name || 'Not set'}</p>
+                    <label className="block text-label text-gray-700 mb-2">{t('fullName')}</label>
+                    <p className="text-body text-gray-900">{userData?.full_name || t('notSet')}</p>
                   </div>
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Date of Birth</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('dateOfBirth')}</label>
                     {isEditing ? (
                       <input
                         type="date"
@@ -262,25 +258,25 @@ export default function ProfilePage() {
                       />
                     ) : (
                       <p className="text-body text-gray-900">
-                        {patientData?.date_of_birth ? new Date(patientData.date_of_birth).toLocaleDateString('en-GH', { year: 'numeric', month: 'long', day: 'numeric' }) : 'Not set'}
+                        {patientData?.date_of_birth ? new Date(patientData.date_of_birth).toLocaleDateString('en-GH', { year: 'numeric', month: 'long', day: 'numeric' }) : t('notSet')}
                       </p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Gender</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('gender')}</label>
                     {isEditing ? (
                       <select
                         value={patientData?.gender || ''}
                         onChange={(e) => setPatientData(prev => prev ? {...prev, gender: e.target.value} : null)}
                         className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                       >
-                        <option value="">Select gender</option>
+                        <option value="">{t('gender')}</option>
                         <option value="Male">Male</option>
                         <option value="Female">Female</option>
                         <option value="Other">Other</option>
                       </select>
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.gender || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.gender || t('notSet')}</p>
                     )}
                   </div>
                 </div>
@@ -291,24 +287,24 @@ export default function ProfilePage() {
           {activeSection === 'contact' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Contact Details</CardTitle>
+                <CardTitle>{t('contactDetails')}</CardTitle>
                 {!isEditing ? (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>{tCommon('edit')}</Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>{tCommon('cancel')}</Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? tNotifications('saving') : tCommon('save')}</Button>
                   </div>
                 )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Email Address</label>
-                    <p className="text-body text-gray-900">{userData?.email || 'Not set'}</p>
+                    <label className="block text-label text-gray-700 mb-2">{t('email')}</label>
+                    <p className="text-body text-gray-900">{userData?.email || t('notSet')}</p>
                   </div>
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Phone Number</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('phone')}</label>
                     {isEditing ? (
                       <input
                         type="tel"
@@ -318,21 +314,21 @@ export default function ProfilePage() {
                         placeholder="+233 XX XXX XXXX"
                       />
                     ) : (
-                      <p className="text-body text-gray-900">{userData?.phone || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{userData?.phone || t('notSet')}</p>
                     )}
                   </div>
                   <div className="md:col-span-2">
-                    <label className="block text-label text-gray-700 mb-2">Address</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('address')}</label>
                     {isEditing ? (
                       <input
                         type="text"
                         value={patientData?.address || ''}
                         onChange={(e) => setPatientData(prev => prev ? {...prev, address: e.target.value} : null)}
                         className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                        placeholder="Street address"
+                        placeholder={t('address')}
                       />
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.address || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.address || t('notSet')}</p>
                     )}
                   </div>
                 </div>
@@ -343,20 +339,20 @@ export default function ProfilePage() {
           {activeSection === 'medical' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Medical Information</CardTitle>
+                <CardTitle>{t('medicalInfo')}</CardTitle>
                 {!isEditing ? (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>{tCommon('edit')}</Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>{tCommon('cancel')}</Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? tNotifications('saving') : tCommon('save')}</Button>
                   </div>
                 )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Ghana Card Number</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('ghanaCard')}</label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -366,7 +362,7 @@ export default function ProfilePage() {
                         placeholder="GHA-XXXXXXXXX-X"
                       />
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.ghana_card_id || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.ghana_card_id || t('notSet')}</p>
                     )}
                   </div>
                 </div>
@@ -375,7 +371,7 @@ export default function ProfilePage() {
                     <svg className="w-5 h-5 text-info flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
-                    <p className="text-body-sm text-gray-600">Your Ghana Card helps verify your identity at partner hospitals.</p>
+                    <p className="text-body-sm text-gray-600">{t('ghanaCardHelp')}</p>
                   </div>
                 </div>
               </CardContent>
@@ -385,20 +381,20 @@ export default function ProfilePage() {
           {activeSection === 'emergency' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Emergency Contact</CardTitle>
+                <CardTitle>{t('emergencyContact')}</CardTitle>
                 {!isEditing ? (
-                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>Edit</Button>
+                  <Button variant="outline" size="sm" onClick={() => setIsEditing(true)}>{tCommon('edit')}</Button>
                 ) : (
                   <div className="flex gap-2">
-                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>Cancel</Button>
-                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? 'Saving...' : 'Save'}</Button>
+                    <Button variant="ghost" size="sm" onClick={() => setIsEditing(false)}>{tCommon('cancel')}</Button>
+                    <Button size="sm" onClick={handleSave} disabled={isSaving}>{isSaving ? tNotifications('saving') : tCommon('save')}</Button>
                   </div>
                 )}
               </CardHeader>
               <CardContent className="space-y-6">
                 <div className="grid md:grid-cols-2 gap-6">
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Contact Name</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('contactName')}</label>
                     {isEditing ? (
                       <input
                         type="text"
@@ -407,18 +403,18 @@ export default function ProfilePage() {
                         className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                       />
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.emergency_contact_name || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.emergency_contact_name || t('notSet')}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Relationship</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('relationship')}</label>
                     {isEditing ? (
                       <select
                         value={patientData?.emergency_contact_relationship || ''}
                         onChange={(e) => setPatientData(prev => prev ? {...prev, emergency_contact_relationship: e.target.value} : null)}
                         className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                       >
-                        <option value="">Select relationship</option>
+                        <option value="">{t('relationship')}</option>
                         <option value="Spouse">Spouse</option>
                         <option value="Parent">Parent</option>
                         <option value="Sibling">Sibling</option>
@@ -427,11 +423,11 @@ export default function ProfilePage() {
                         <option value="Other">Other</option>
                       </select>
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.emergency_contact_relationship || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.emergency_contact_relationship || t('notSet')}</p>
                     )}
                   </div>
                   <div>
-                    <label className="block text-label text-gray-700 mb-2">Phone Number</label>
+                    <label className="block text-label text-gray-700 mb-2">{t('phone')}</label>
                     {isEditing ? (
                       <input
                         type="tel"
@@ -440,7 +436,7 @@ export default function ProfilePage() {
                         className="w-full h-11 px-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                       />
                     ) : (
-                      <p className="text-body text-gray-900">{patientData?.emergency_contact_phone || 'Not set'}</p>
+                      <p className="text-body text-gray-900">{patientData?.emergency_contact_phone || t('notSet')}</p>
                     )}
                   </div>
                 </div>
@@ -450,37 +446,37 @@ export default function ProfilePage() {
 
           {activeSection === 'security' && (
             <Card>
-              <CardHeader><CardTitle>Security Settings</CardTitle></CardHeader>
+              <CardHeader><CardTitle>{t('security')}</CardTitle></CardHeader>
               <CardContent className="space-y-6">
                 <div className="p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-label text-gray-900">Password</h4>
-                      <p className="text-body-sm text-gray-500">Signed in with Google - password managed by Google</p>
+                      <h4 className="text-label text-gray-900">{t('password')}</h4>
+                      <p className="text-body-sm text-gray-500">{t('passwordManaged')}</p>
                     </div>
                     <Button
                       variant="outline"
                       size="sm"
                       onClick={() => window.open('https://myaccount.google.com/security', '_blank')}
                     >
-                      Manage in Google
+                      {t('manageGoogle')}
                     </Button>
                   </div>
                 </div>
                 <div className="p-4 border border-gray-200 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-label text-gray-900">Active Sessions</h4>
-                      <p className="text-body-sm text-gray-500">You are currently signed in on this device</p>
+                      <h4 className="text-label text-gray-900">{t('activeSessions')}</h4>
+                      <p className="text-body-sm text-gray-500">{t('currentDevice')}</p>
                     </div>
-                    <Badge variant="success">Active</Badge>
+                    <Badge variant="success">{t('active')}</Badge>
                   </div>
                 </div>
                 <div className="p-4 border border-error/20 bg-error/5 rounded-lg">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h4 className="text-label text-error">Delete Account</h4>
-                      <p className="text-body-sm text-gray-500">Permanently delete your account and all data</p>
+                      <h4 className="text-label text-error">{t('deleteAccount')}</h4>
+                      <p className="text-body-sm text-gray-500">{t('deleteAccountDesc')}</p>
                     </div>
                     <Button
                       variant="outline"
@@ -488,7 +484,7 @@ export default function ProfilePage() {
                       className="text-error border-error hover:bg-error/10"
                       onClick={() => setShowDeleteModal(true)}
                     >
-                      Delete Account
+                      {t('deleteAccount')}
                     </Button>
                   </div>
                 </div>
@@ -499,16 +495,16 @@ export default function ProfilePage() {
           {activeSection === 'notifications' && (
             <Card>
               <CardHeader className="flex flex-row items-center justify-between">
-                <CardTitle>Notification Preferences</CardTitle>
+                <CardTitle>{tNotifications('title')}</CardTitle>
                 {isSavingNotifications && (
-                  <span className="text-body-sm text-gray-500">Saving...</span>
+                  <span className="text-body-sm text-gray-500">{tNotifications('saving')}</span>
                 )}
                 {notificationSaved && (
                   <span className="text-body-sm text-success flex items-center gap-1">
                     <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                       <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
                     </svg>
-                    Saved
+                    {tNotifications('saved')}
                   </span>
                 )}
               </CardHeader>
@@ -516,8 +512,8 @@ export default function ProfilePage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div>
-                      <h4 className="text-label text-gray-900">Appointment Reminders</h4>
-                      <p className="text-body-sm text-gray-500">Get SMS reminders before appointments</p>
+                      <h4 className="text-label text-gray-900">{tNotifications('appointmentReminders')}</h4>
+                      <p className="text-body-sm text-gray-500">{tNotifications('appointmentRemindersDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -531,8 +527,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div>
-                      <h4 className="text-label text-gray-900">Email Notifications</h4>
-                      <p className="text-body-sm text-gray-500">Receive appointment confirmations via email</p>
+                      <h4 className="text-label text-gray-900">{tNotifications('emailNotifications')}</h4>
+                      <p className="text-body-sm text-gray-500">{tNotifications('emailNotificationsDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -546,8 +542,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center justify-between py-3 border-b border-gray-100">
                     <div>
-                      <h4 className="text-label text-gray-900">Marketing Updates</h4>
-                      <p className="text-body-sm text-gray-500">Receive news about new features and hospitals</p>
+                      <h4 className="text-label text-gray-900">{tNotifications('marketingUpdates')}</h4>
+                      <p className="text-body-sm text-gray-500">{tNotifications('marketingUpdatesDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -561,8 +557,8 @@ export default function ProfilePage() {
                   </div>
                   <div className="flex items-center justify-between py-3">
                     <div>
-                      <h4 className="text-label text-gray-900">Health Tips</h4>
-                      <p className="text-body-sm text-gray-500">Weekly health tips and reminders</p>
+                      <h4 className="text-label text-gray-900">{tNotifications('healthTips')}</h4>
+                      <p className="text-body-sm text-gray-500">{tNotifications('healthTipsDesc')}</p>
                     </div>
                     <label className="relative inline-flex items-center cursor-pointer">
                       <input
@@ -595,15 +591,13 @@ export default function ProfilePage() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
                 </svg>
               </div>
-              <h3 className="text-h3 text-gray-900 mb-2">Delete Account</h3>
-              <p className="text-body text-gray-600">
-                This action is <strong>permanent</strong> and cannot be undone. All your data, appointments, and profile information will be deleted.
-              </p>
+              <h3 className="text-h3 text-gray-900 mb-2">{t('deleteConfirmTitle')}</h3>
+              <p className="text-body text-gray-600">{t('deleteConfirmDesc')}</p>
             </div>
 
             <div className="mb-6">
               <label className="block text-label text-gray-700 mb-2">
-                Type <strong>DELETE</strong> to confirm
+                {t('typeDelete')}
               </label>
               <input
                 type="text"
@@ -623,7 +617,7 @@ export default function ProfilePage() {
                   setDeleteConfirmText('')
                 }}
               >
-                Cancel
+                {tCommon('cancel')}
               </Button>
               <Button
                 className="flex-1 bg-error hover:bg-error/90 text-white"
@@ -636,10 +630,10 @@ export default function ProfilePage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Deleting...
+                    {t('deleting')}
                   </>
                 ) : (
-                  'Delete Account'
+                  t('deleteAccount')
                 )}
               </Button>
             </div>

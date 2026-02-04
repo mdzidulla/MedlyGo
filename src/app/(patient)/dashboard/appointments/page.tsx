@@ -2,6 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
@@ -31,6 +32,11 @@ const statusColors = {
 type TabType = 'all' | 'upcoming' | 'past' | 'cancelled'
 
 export default function AppointmentsPage() {
+  const t = useTranslations('dashboard')
+  const tNav = useTranslations('nav')
+  const tCommon = useTranslations('common')
+  const tBooking = useTranslations('booking')
+
   const [activeTab, setActiveTab] = React.useState<TabType>('all')
   const [searchQuery, setSearchQuery] = React.useState('')
   const [isLoading, setIsLoading] = React.useState(true)
@@ -102,10 +108,10 @@ export default function AppointmentsPage() {
   })
 
   const tabs: { key: TabType; label: string; count: number }[] = [
-    { key: 'all', label: 'All', count: appointments.length },
-    { key: 'upcoming', label: 'Upcoming', count: appointments.filter(a => a.appointment_date >= nowDateStr && a.status !== 'cancelled').length },
-    { key: 'past', label: 'Past', count: appointments.filter(a => a.appointment_date < nowDateStr && a.status === 'completed').length },
-    { key: 'cancelled', label: 'Cancelled', count: appointments.filter(a => a.status === 'cancelled').length },
+    { key: 'all', label: tCommon('viewAll'), count: appointments.length },
+    { key: 'upcoming', label: t('upcomingAppointments'), count: appointments.filter(a => a.appointment_date >= nowDateStr && a.status !== 'cancelled').length },
+    { key: 'past', label: t('pastAppointments'), count: appointments.filter(a => a.appointment_date < nowDateStr && a.status === 'completed').length },
+    { key: 'cancelled', label: t('status.cancelled'), count: appointments.filter(a => a.status === 'cancelled').length },
   ]
 
   const formatDate = (dateStr: string) => {
@@ -115,6 +121,10 @@ export default function AppointmentsPage() {
   const getDateParts = (dateStr: string) => {
     const date = new Date(dateStr)
     return { day: date.getDate(), month: date.toLocaleDateString('en-GH', { month: 'short' }) }
+  }
+
+  const getStatusLabel = (status: string) => {
+    return t(`status.${status === 'no_show' ? 'noShow' : status}`)
   }
 
   if (isLoading) {
@@ -133,15 +143,15 @@ export default function AppointmentsPage() {
     <div className="container mx-auto px-4 py-8 max-w-5xl">
       <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4 mb-8">
         <div>
-          <h1 className="text-h1 text-gray-900">My Appointments</h1>
-          <p className="text-body text-gray-600">View and manage all your appointments</p>
+          <h1 className="text-h1 text-gray-900">{tNav('myAppointments')}</h1>
+          <p className="text-body text-gray-600">{t('quickActions.viewHistory')}</p>
         </div>
         <Link href="/dashboard/booking">
           <Button>
             <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
             </svg>
-            Book New
+            {t('quickActions.bookNew')}
           </Button>
         </Link>
       </div>
@@ -150,7 +160,7 @@ export default function AppointmentsPage() {
         <div className="relative">
           <input
             type="text"
-            placeholder="Search by hospital, department, or reference..."
+            placeholder={tCommon('search')}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-12 pl-12 pr-4 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all"
@@ -187,9 +197,9 @@ export default function AppointmentsPage() {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
               </svg>
             </div>
-            <h3 className="text-h3 text-gray-900 mb-2">No appointments found</h3>
-            <p className="text-body text-gray-600 mb-4">{searchQuery ? 'Try a different search term' : 'You have no appointments in this category'}</p>
-            <Link href="/dashboard/booking"><Button>Book an Appointment</Button></Link>
+            <h3 className="text-h3 text-gray-900 mb-2">{t('noUpcoming')}</h3>
+            <p className="text-body text-gray-600 mb-4">{searchQuery ? tCommon('search') : t('bookFirst')}</p>
+            <Link href="/dashboard/booking"><Button>{tNav('bookAppointment')}</Button></Link>
           </CardContent>
         </Card>
       ) : (
@@ -212,10 +222,10 @@ export default function AppointmentsPage() {
                       </div>
                       <div className="flex-1">
                         <div className="flex flex-wrap items-center gap-2 mb-1">
-                          <h3 className={cn('text-label', apt.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900')}>{apt.hospital?.name || 'Hospital'}</h3>
-                          <Badge variant={statusColors[apt.status]}>{apt.status.charAt(0).toUpperCase() + apt.status.slice(1)}</Badge>
+                          <h3 className={cn('text-label', apt.status === 'cancelled' ? 'text-gray-400 line-through' : 'text-gray-900')}>{apt.hospital?.name || tBooking('confirmation.hospital')}</h3>
+                          <Badge variant={statusColors[apt.status]}>{getStatusLabel(apt.status)}</Badge>
                         </div>
-                        <p className="text-body-sm text-gray-600">{apt.department?.name || 'Department'}</p>
+                        <p className="text-body-sm text-gray-600">{apt.department?.name || tBooking('confirmation.department')}</p>
                         <div className="flex flex-wrap items-center gap-4 mt-2 text-body-sm text-gray-500">
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
@@ -232,12 +242,12 @@ export default function AppointmentsPage() {
                     <div className="flex gap-2 md:flex-col flex-shrink-0">
                       {apt.status !== 'cancelled' && apt.status !== 'completed' && (
                         <>
-                          <Button variant="outline" size="sm" className="flex-1 md:flex-none">Reschedule</Button>
-                          <Button variant="ghost" size="sm" className="flex-1 md:flex-none text-error hover:text-error hover:bg-error/10">Cancel</Button>
+                          <Button variant="outline" size="sm" className="flex-1 md:flex-none">{t('reschedule')}</Button>
+                          <Button variant="ghost" size="sm" className="flex-1 md:flex-none text-error hover:text-error hover:bg-error/10">{t('cancel')}</Button>
                         </>
                       )}
-                      {apt.status === 'completed' && <Button variant="outline" size="sm">Book Again</Button>}
-                      {apt.status === 'cancelled' && <Button variant="outline" size="sm">Rebook</Button>}
+                      {apt.status === 'completed' && <Button variant="outline" size="sm">{tBooking('success.bookAnother')}</Button>}
+                      {apt.status === 'cancelled' && <Button variant="outline" size="sm">{tBooking('success.bookAnother')}</Button>}
                     </div>
                   </div>
                 </CardContent>
