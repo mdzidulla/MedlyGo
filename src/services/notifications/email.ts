@@ -462,4 +462,71 @@ Book a new appointment: https://medlygo.com/book
 - MedlyGo Team
     `.trim(),
   }),
+
+  hospitalCredentials: (data: {
+    hospitalName: string
+    email: string
+    temporaryPassword: string
+    loginUrl: string
+  }) => ({
+    subject: `Welcome to MedlyGo - Your Hospital Portal Credentials`,
+    html: baseEmailTemplate(`
+      <span class="success-badge">✓ Account Created</span>
+      <h1>Welcome to MedlyGo!</h1>
+      <p>Hi ${data.hospitalName} Team,</p>
+      <p>Your hospital has been successfully registered on the MedlyGo platform. You can now access your hospital portal to manage appointments, departments, and doctors.</p>
+
+      <div class="appointment-card">
+        <div class="appointment-row">
+          <span class="appointment-label">Login Email</span>
+          <span class="appointment-value">${data.email}</span>
+        </div>
+        <div class="appointment-row">
+          <span class="appointment-label">Temporary Password</span>
+          <span class="appointment-value" style="font-family: monospace; background: #F1F5F9; padding: 4px 8px; border-radius: 4px;">${data.temporaryPassword}</span>
+        </div>
+      </div>
+
+      <div class="info-box" style="background-color: #FEF3C7; border-left-color: #F59E0B;">
+        <p style="color: #92400E;"><strong>Important:</strong> Please change your password immediately after your first login for security purposes.</p>
+      </div>
+
+      <a href="${data.loginUrl}" class="button">Login to Hospital Portal</a>
+
+      <h2>What you can do:</h2>
+      <ul style="color: #334155; padding-left: 20px;">
+        <li>View and manage patient appointments</li>
+        <li>Approve or reschedule booking requests</li>
+        <li>Set up your hospital departments</li>
+        <li>Manage doctor profiles and schedules</li>
+      </ul>
+
+      <p style="color: #64748B; font-size: 14px; margin-top: 24px;">If you did not expect this email or need assistance, please contact our support team.</p>
+    `),
+    text: `
+Welcome to MedlyGo!
+
+Hi ${data.hospitalName} Team,
+
+Your hospital has been successfully registered on MedlyGo.
+
+Login Credentials:
+- Email: ${data.email}
+- Temporary Password: ${data.temporaryPassword}
+
+IMPORTANT: Please change your password immediately after your first login.
+
+Login here: ${data.loginUrl}
+
+What you can do:
+- View and manage patient appointments
+- Approve or reschedule booking requests
+- Set up your hospital departments
+- Manage doctor profiles and schedules
+
+If you need assistance, please contact our support team.
+
+- MedlyGo Team
+    `.trim(),
+  }),
 }

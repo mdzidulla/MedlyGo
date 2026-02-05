@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js'
 import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { sendEmail, emailTemplates } from '@/services/notifications/email'
 
 // Helper: Generate temporary password
 function generateTemporaryPassword(): string {
@@ -166,6 +167,30 @@ export async function POST(request: Request) {
       }
     }
 
+    // Send credentials email to the hospital
+    try {
+      const emailContent = emailTemplates.hospitalCredentials({
+        hospitalName: name,
+        email: email,
+        temporaryPassword,
+        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.medlygo.com'}/login`,
+      })
+
+      const emailResult = await sendEmail({
+        to: email,
+        subject: emailContent.subject,
+        html: emailContent.html,
+        text: emailContent.text,
+      })
+
+      if (!emailResult.success) {
+        console.warn('Failed to send credentials email:', emailResult.error)
+      }
+    } catch (emailError) {
+      console.error('Error sending credentials email:', emailError)
+      // Don't fail the whole operation if email fails
+    }
+
     return NextResponse.json({
       success: true,
       hospitalId: hospitalData.id,
@@ -173,6 +198,7 @@ export async function POST(request: Request) {
         email: email,
         temporaryPassword,
       },
+      emailSent: true,
     })
   } catch (error) {
     console.error('Unexpected error creating hospital:', error)
