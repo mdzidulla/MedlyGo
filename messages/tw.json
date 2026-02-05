@@ -406,6 +406,69 @@
     "hospitals": "Yɛn Ayaresabea",
     "faq": "Nsɛmmisa"
   },
+  "provider": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "appointments": "Appointments",
+      "schedule": "Schedule",
+      "patients": "Ayarefoɔ",
+      "settings": "Nhyehyɛe"
+    },
+    "appointments": {
+      "title": "Appointment Hwɛso",
+      "subtitle": "Hwɛ na hwɛ ayarefoɔ appointments so",
+      "pendingAlert": "Wowɔ appointment {count} a ɛretwɛn penesu",
+      "pendingAlertDesc": "Yɛsrɛ wo hwɛ na bua abisade yi",
+      "searchPlaceholder": "Hwehwɛ de ayarefo din, reference, anaa department...",
+      "tabs": {
+        "pending": "Ɛretwɛn Penesu",
+        "confirmed": "Ɛreba",
+        "all": "Appointments Nyinaa"
+      },
+      "noPending": "Appointment biara nni hɔ a ɛretwɛn",
+      "noUpcoming": "Appointment biara nni hɔ a ɛreba",
+      "noAppointments": "Yɛanhu appointment biara",
+      "noAppointmentsDesc": "Appointments bɛba ha sɛ ayarefoɔ hyehyɛ",
+      "approve": "Pene So",
+      "reject": "Po",
+      "suggest": "De Bere Foforɔ Kyerɛ",
+      "viewDetails": "Hwɛ Nsɛm",
+      "rejectModal": {
+        "title": "Po Appointment",
+        "description": "Yɛsrɛ wo kyerɛ adɛn nti na worepo appointment yi. Yɛbɛbɔ ɔyarefo no amanneɛ.",
+        "reasonPlaceholder": "Adɛn nti na worepo (ɛhia)",
+        "cancel": "Gyae",
+        "confirm": "Po"
+      },
+      "suggestModal": {
+        "title": "De Bere Foforɔ Kyerɛ",
+        "description": "De bere ne da foforɔ kyerɛ ma appointment yi.",
+        "dateLabel": "Da",
+        "timeLabel": "Bere",
+        "timePlaceholder": "Yi bere",
+        "reasonLabel": "Adɛn nti (ɛnyɛ dɛ)",
+        "reasonPlaceholder": "Adɛn nti na wode bere foforɔ rekyerɛ...",
+        "cancel": "Gyae",
+        "confirm": "Mena Bere Foforɔ"
+      }
+    },
+    "dashboard": {
+      "greeting": "{timeOfDay} pa, {name}!",
+      "totalAppointments": "Appointments Nyinaa",
+      "completed": "Awie",
+      "remaining": "Ɛkaa",
+      "noShows": "Wɔmmbaa",
+      "patientQueue": "Ayarefoɔ Nhwɛso",
+      "viewAll": "Hwɛ Nyinaa",
+      "scheduleOverview": "Schedule Nhwɛso",
+      "recentActivity": "Nneɛma a Ɛtwaam",
+      "morning": "Anɔpa (8:00 - 12:00)",
+      "afternoon": "Awia (14:00 - 17:00)",
+      "appointments": "appointments",
+      "startConsultation": "Hyɛ Consultation Aseɛ",
+      "checkIn": "Check In"
+    }
+  },
   "support": {
     "title": "Mmoa Center",
     "subtitle": "Ɛyɛ dɛn na yɛbɛboa wo ɛnnɛ?",

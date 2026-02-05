@@ -406,6 +406,69 @@
     "hospitals": "Partner Hospitals",
     "faq": "FAQ"
   },
+  "provider": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "appointments": "Appointments",
+      "schedule": "Schedule",
+      "patients": "Patients",
+      "settings": "Settings"
+    },
+    "appointments": {
+      "title": "Appointment Management",
+      "subtitle": "Review and manage patient appointments",
+      "pendingAlert": "You have {count} appointment(s) pending approval",
+      "pendingAlertDesc": "Please review and respond to these requests",
+      "searchPlaceholder": "Search by patient name, reference, or department...",
+      "tabs": {
+        "pending": "Pending Approval",
+        "confirmed": "Upcoming",
+        "all": "All Appointments"
+      },
+      "noPending": "No pending appointments",
+      "noUpcoming": "No upcoming appointments",
+      "noAppointments": "No appointments found",
+      "noAppointmentsDesc": "Appointments will appear here when patients book",
+      "approve": "Approve",
+      "reject": "Reject",
+      "suggest": "Suggest",
+      "viewDetails": "View Details",
+      "rejectModal": {
+        "title": "Reject Appointment",
+        "description": "Please provide a reason for rejecting this appointment. The patient will be notified.",
+        "reasonPlaceholder": "Reason for rejection (required)",
+        "cancel": "Cancel",
+        "confirm": "Reject"
+      },
+      "suggestModal": {
+        "title": "Suggest Alternative",
+        "description": "Suggest an alternative date and time for this appointment.",
+        "dateLabel": "Date",
+        "timeLabel": "Time",
+        "timePlaceholder": "Select a time",
+        "reasonLabel": "Reason (optional)",
+        "reasonPlaceholder": "Why you're suggesting this alternative...",
+        "cancel": "Cancel",
+        "confirm": "Send Suggestion"
+      }
+    },
+    "dashboard": {
+      "greeting": "Good {timeOfDay}, {name}!",
+      "totalAppointments": "Total Appointments",
+      "completed": "Completed",
+      "remaining": "Remaining",
+      "noShows": "No Shows",
+      "patientQueue": "Patient Queue",
+      "viewAll": "View All",
+      "scheduleOverview": "Schedule Overview",
+      "recentActivity": "Recent Activity",
+      "morning": "Morning (8:00 - 12:00)",
+      "afternoon": "Afternoon (14:00 - 17:00)",
+      "appointments": "appointments",
+      "startConsultation": "Start Consultation",
+      "checkIn": "Check In"
+    }
+  },
   "support": {
     "title": "Support Center",
     "subtitle": "How can we help you today?",
