@@ -7,7 +7,17 @@ export type Json =
   | Json[]
 
 export type UserRole = 'patient' | 'provider' | 'admin'
-export type AppointmentStatus = 'scheduled' | 'confirmed' | 'checked_in' | 'in_progress' | 'completed' | 'cancelled' | 'no_show'
+export type AppointmentStatus =
+  | 'pending'      // Patient booked, awaiting hospital approval
+  | 'confirmed'    // Hospital approved
+  | 'rejected'     // Hospital rejected
+  | 'suggested'    // Hospital suggested alternative (linked to original)
+  | 'scheduled'    // Legacy status
+  | 'checked_in'
+  | 'in_progress'
+  | 'completed'
+  | 'cancelled'
+  | 'no_show'
 export type NotificationType = 'sms' | 'email'
 export type NotificationStatus = 'pending' | 'sent' | 'failed'
 
@@ -273,12 +283,12 @@ export interface Database {
         Row: {
           id: string
           patient_id: string
-          provider_id: string
+          provider_id: string | null
           hospital_id: string
           department_id: string
           appointment_date: string
           start_time: string
-          end_time: string
+          end_time: string | null
           status: AppointmentStatus
           reason: string | null
           notes: string | null
@@ -287,38 +297,52 @@ export interface Database {
           completed_at: string | null
           cancelled_at: string | null
           cancellation_reason: string | null
+          // New fields for appointment workflow
+          reviewed_by: string | null
+          reviewed_at: string | null
+          rejection_reason: string | null
+          original_appointment_id: string | null
+          suggested_date: string | null
+          suggested_time: string | null
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           patient_id: string
-          provider_id: string
+          provider_id?: string | null
           hospital_id: string
           department_id: string
           appointment_date: string
           start_time: string
-          end_time: string
+          end_time?: string | null
           status?: AppointmentStatus
           reason?: string | null
           notes?: string | null
-          reference_number?: string
+          reference_number: string
           checked_in_at?: string | null
           completed_at?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null
+          // New fields for appointment workflow
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          rejection_reason?: string | null
+          original_appointment_id?: string | null
+          suggested_date?: string | null
+          suggested_time?: string | null
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           patient_id?: string
-          provider_id?: string
+          provider_id?: string | null
           hospital_id?: string
           department_id?: string
           appointment_date?: string
           start_time?: string
-          end_time?: string
+          end_time?: string | null
           status?: AppointmentStatus
           reason?: string | null
           notes?: string | null
@@ -327,6 +351,13 @@ export interface Database {
           completed_at?: string | null
           cancelled_at?: string | null
           cancellation_reason?: string | null
+          // New fields for appointment workflow
+          reviewed_by?: string | null
+          reviewed_at?: string | null
+          rejection_reason?: string | null
+          original_appointment_id?: string | null
+          suggested_date?: string | null
+          suggested_time?: string | null
           created_at?: string
           updated_at?: string
         }

@@ -9,72 +9,26 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { createClient } from '@/lib/supabase/client'
+import { createAppointment } from '@/lib/appointments/actions'
 
-// Mock data for hospitals
-const hospitals = [
-  {
-    id: '1',
-    name: 'Korle Bu Teaching Hospital',
-    address: 'Guggisberg Ave, Accra',
-    city: 'Accra',
-    region: 'Greater Accra Region',
-    distance: '2.3 km',
-    rating: 4.2,
-    totalReviews: 1247,
-    is24Hours: true,
-    imageUrl: null,
-  },
-  {
-    id: '2',
-    name: '37 Military Hospital',
-    address: '37 Military Hospital Road, Accra',
-    city: 'Accra',
-    region: 'Greater Accra Region',
-    distance: '4.1 km',
-    rating: 4.5,
-    totalReviews: 892,
-    is24Hours: true,
-    imageUrl: null,
-  },
-  {
-    id: '3',
-    name: 'Ridge Hospital',
-    address: 'Castle Road, Accra',
-    city: 'Accra',
-    region: 'Greater Accra Region',
-    distance: '3.8 km',
-    rating: 4.0,
-    totalReviews: 654,
-    is24Hours: true,
-    imageUrl: null,
-  },
-  {
-    id: '4',
-    name: 'Komfo Anokye Teaching Hospital',
-    address: 'Bantama, Kumasi',
-    city: 'Kumasi',
-    region: 'Ashanti Region',
-    distance: '250 km',
-    rating: 4.3,
-    totalReviews: 1089,
-    is24Hours: true,
-    imageUrl: null,
-  },
-]
+interface Hospital {
+  id: string
+  name: string
+  address: string
+  city: string
+  region: string
+  is_active: boolean
+  image_url: string | null
+}
 
-// Mock data for departments
-const departments = [
-  { id: '1', name: 'General Medicine', icon: '🩺', description: 'General health consultations and check-ups' },
-  { id: '2', name: 'Pediatrics', icon: '👶', description: 'Healthcare for infants, children, and adolescents' },
-  { id: '3', name: 'Obstetrics & Gynecology', icon: '🤰', description: "Women's health and prenatal care" },
-  { id: '4', name: 'Cardiology', icon: '❤️', description: 'Heart and cardiovascular system' },
-  { id: '5', name: 'Orthopedics', icon: '🦴', description: 'Bones, joints, and musculoskeletal system' },
-  { id: '6', name: 'Dermatology', icon: '🧴', description: 'Skin, hair, and nail conditions' },
-  { id: '7', name: 'ENT', icon: '👂', description: 'Ear, nose, and throat' },
-  { id: '8', name: 'Ophthalmology', icon: '👁️', description: 'Eye care and vision' },
-  { id: '9', name: 'Dental', icon: '🦷', description: 'Oral health and dental care' },
-  { id: '10', name: 'Neurology', icon: '🧠', description: 'Brain and nervous system' },
-]
+interface Department {
+  id: string
+  name: string
+  description: string | null
+  hospital_id: string
+  is_active: boolean
+}
 
 type BookingStep = 'hospital' | 'department' | 'datetime' | 'confirm'
 
@@ -82,15 +36,61 @@ export default function BookPage() {
   const router = useRouter()
   const t = useTranslations('booking')
   const tCommon = useTranslations('common')
-  const tFooter = useTranslations('footer')
   const tChat = useTranslations('chat')
 
   const [step, setStep] = React.useState<BookingStep>('hospital')
   const [searchQuery, setSearchQuery] = React.useState('')
-  const [selectedHospital, setSelectedHospital] = React.useState<typeof hospitals[0] | null>(null)
-  const [selectedDepartment, setSelectedDepartment] = React.useState<typeof departments[0] | null>(null)
+  const [selectedHospital, setSelectedHospital] = React.useState<Hospital | null>(null)
+  const [selectedDepartment, setSelectedDepartment] = React.useState<Department | null>(null)
   const [selectedDate, setSelectedDate] = React.useState<Date | null>(null)
   const [selectedTime, setSelectedTime] = React.useState<string | null>(null)
+
+  // Data states
+  const [hospitals, setHospitals] = React.useState<Hospital[]>([])
+  const [departments, setDepartments] = React.useState<Department[]>([])
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  // Fetch hospitals on mount
+  React.useEffect(() => {
+    async function fetchHospitals() {
+      setIsLoading(true)
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('hospitals')
+        .select('id, name, address, city, region, is_active, image_url')
+        .eq('is_active', true)
+        .order('name')
+
+      if (!error && data) {
+        setHospitals(data)
+      }
+      setIsLoading(false)
+    }
+    fetchHospitals()
+  }, [])
+
+  // Fetch departments when hospital is selected
+  React.useEffect(() => {
+    async function fetchDepartments() {
+      if (!selectedHospital) {
+        setDepartments([])
+        return
+      }
+
+      const supabase = createClient()
+      const { data, error } = await supabase
+        .from('departments')
+        .select('id, name, description, hospital_id, is_active')
+        .eq('hospital_id', selectedHospital.id)
+        .eq('is_active', true)
+        .order('name')
+
+      if (!error && data) {
+        setDepartments(data)
+      }
+    }
+    fetchDepartments()
+  }, [selectedHospital])
 
   // Filter hospitals based on search
   const filteredHospitals = hospitals.filter(
@@ -103,16 +103,16 @@ export default function BookPage() {
   const filteredDepartments = departments.filter(
     (dept) =>
       dept.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      dept.description.toLowerCase().includes(searchQuery.toLowerCase())
+      (dept.description?.toLowerCase().includes(searchQuery.toLowerCase()) ?? false)
   )
 
-  const handleSelectHospital = (hospital: typeof hospitals[0]) => {
+  const handleSelectHospital = (hospital: Hospital) => {
     setSelectedHospital(hospital)
     setStep('department')
     setSearchQuery('')
   }
 
-  const handleSelectDepartment = (department: typeof departments[0]) => {
+  const handleSelectDepartment = (department: Department) => {
     setSelectedDepartment(department)
     setStep('datetime')
   }
@@ -135,6 +135,35 @@ export default function BookPage() {
     t('steps.datetime'),
     t('steps.confirm')
   ]
+
+  // Department icons mapping
+  const getDepartmentIcon = (name: string): string => {
+    const iconMap: Record<string, string> = {
+      'General Medicine': '🩺',
+      'Pediatrics': '👶',
+      'Obstetrics': '🤰',
+      'Gynecology': '🤰',
+      'Cardiology': '❤️',
+      'Orthopedics': '🦴',
+      'Dermatology': '🧴',
+      'ENT': '👂',
+      'Ophthalmology': '👁️',
+      'Dental': '🦷',
+      'Neurology': '🧠',
+      'Surgery': '🔪',
+      'Radiology': '📷',
+      'Laboratory': '🧪',
+      'Pharmacy': '💊',
+      'Emergency': '🚑',
+    }
+
+    for (const [key, icon] of Object.entries(iconMap)) {
+      if (name.toLowerCase().includes(key.toLowerCase())) {
+        return icon
+      }
+    }
+    return '🏥'
+  }
 
   return (
     <div className="container mx-auto px-4 py-8 max-w-4xl">
@@ -217,45 +246,56 @@ export default function BookPage() {
           </div>
 
           {/* Hospital List */}
-          <div className="space-y-4">
-            {filteredHospitals.map((hospital) => (
-              <Card
-                key={hospital.id}
-                className="cursor-pointer hover:shadow-card-hover transition-shadow"
-                onClick={() => handleSelectHospital(hospital)}
-              >
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
+          {isLoading ? (
+            <div className="space-y-4">
+              {[1, 2, 3].map((i) => (
+                <Card key={i} className="animate-pulse">
+                  <CardContent className="p-6">
                     <div className="flex gap-4">
-                      <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
-                        <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                        </svg>
+                      <div className="w-12 h-12 bg-gray-200 rounded-lg" />
+                      <div className="flex-1 space-y-2">
+                        <div className="h-5 bg-gray-200 rounded w-1/3" />
+                        <div className="h-4 bg-gray-200 rounded w-1/2" />
                       </div>
-                      <div>
-                        <h3 className="text-h3 text-gray-900">{hospital.name}</h3>
-                        <p className="text-body-sm text-gray-500">{hospital.address}</p>
-                        <div className="flex items-center gap-3 mt-2">
-                          <div className="flex items-center gap-1">
-                            <svg className="w-4 h-4 text-yellow-400" fill="currentColor" viewBox="0 0 20 20">
-                              <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                            </svg>
-                            <span className="text-body-sm text-gray-600">
-                              {hospital.rating} ({hospital.totalReviews.toLocaleString()} reviews)
-                            </span>
-                          </div>
-                          {hospital.is24Hours && (
-                            <Badge variant="success">Open 24/7</Badge>
-                          )}
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : filteredHospitals.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-500">{t('hospital.noResults')}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="space-y-4">
+              {filteredHospitals.map((hospital) => (
+                <Card
+                  key={hospital.id}
+                  className="cursor-pointer hover:shadow-card-hover transition-shadow"
+                  onClick={() => handleSelectHospital(hospital)}
+                >
+                  <CardContent className="p-6">
+                    <div className="flex items-start justify-between">
+                      <div className="flex gap-4">
+                        <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
+                          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                          </svg>
+                        </div>
+                        <div>
+                          <h3 className="text-h3 text-gray-900">{hospital.name}</h3>
+                          <p className="text-body-sm text-gray-500">{hospital.address}</p>
+                          <p className="text-body-sm text-gray-400">{hospital.city}, {hospital.region}</p>
                         </div>
                       </div>
                     </div>
-                    <span className="text-body-sm text-gray-500">{hospital.distance}</span>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -294,46 +334,36 @@ export default function BookPage() {
             </svg>
           </div>
 
-          {/* AI Assistant Link */}
-          <div className="mb-6 p-4 bg-primary-50 rounded-lg">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 bg-primary rounded-full flex items-center justify-center flex-shrink-0">
-                <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-                </svg>
-              </div>
-              <div>
-                <h3 className="text-label text-gray-900">{tChat('suggestions.departments')}</h3>
-                <p className="text-body-sm text-gray-600">
-                  {tChat('footer')}
-                </p>
-                <Button variant="link" className="p-0 h-auto mt-1">
-                  {tChat('suggestions.bookAppointment')} →
-                </Button>
-              </div>
-            </div>
-          </div>
-
           {/* Department Grid */}
-          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
-            {filteredDepartments.map((dept) => (
-              <Card
-                key={dept.id}
-                className="cursor-pointer hover:shadow-card-hover transition-shadow"
-                onClick={() => handleSelectDepartment(dept)}
-              >
-                <CardContent className="p-4">
-                  <div className="flex items-center gap-3">
-                    <span className="text-2xl">{dept.icon}</span>
-                    <div>
-                      <h3 className="text-label text-gray-900">{dept.name}</h3>
-                      <p className="text-body-sm text-gray-500 line-clamp-1">{dept.description}</p>
+          {filteredDepartments.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center">
+                <p className="text-gray-500">{t('hospital.noResults')}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredDepartments.map((dept) => (
+                <Card
+                  key={dept.id}
+                  className="cursor-pointer hover:shadow-card-hover transition-shadow"
+                  onClick={() => handleSelectDepartment(dept)}
+                >
+                  <CardContent className="p-4">
+                    <div className="flex items-center gap-3">
+                      <span className="text-2xl">{getDepartmentIcon(dept.name)}</span>
+                      <div>
+                        <h3 className="text-label text-gray-900">{dept.name}</h3>
+                        {dept.description && (
+                          <p className="text-body-sm text-gray-500 line-clamp-1">{dept.description}</p>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
         </div>
       )}
 
@@ -374,8 +404,8 @@ function DateTimeSelection({
   onBack,
   onContinue,
 }: {
-  hospital: typeof hospitals[0] | null
-  department: typeof departments[0] | null
+  hospital: Hospital | null
+  department: Department | null
   selectedDate: Date | null
   selectedTime: string | null
   onDateChange: (date: Date) => void
@@ -415,7 +445,7 @@ function DateTimeSelection({
   const today = new Date()
   today.setHours(0, 0, 0, 0)
 
-  // Mock time slots
+  // Time slots
   const morningSlots = ['08:00', '08:30', '09:00', '09:30', '10:00', '10:30', '11:00']
   const afternoonSlots = ['14:00', '14:30', '15:00', '15:30', '16:00']
 
@@ -579,8 +609,8 @@ function ConfirmBooking({
   time,
   onBack,
 }: {
-  hospital: typeof hospitals[0] | null
-  department: typeof departments[0] | null
+  hospital: Hospital | null
+  department: Department | null
   date: Date | null
   time: string | null
   onBack: () => void
@@ -596,14 +626,37 @@ function ConfirmBooking({
   const [emailNotification, setEmailNotification] = React.useState(true)
   const [isLoading, setIsLoading] = React.useState(false)
   const [termsAccepted, setTermsAccepted] = React.useState(false)
+  const [error, setError] = React.useState('')
+  const [success, setSuccess] = React.useState<{ referenceNumber: string } | null>(null)
 
   const handleConfirm = async () => {
-    if (!termsAccepted) return
+    if (!termsAccepted || !hospital || !department || !date || !time) return
 
     setIsLoading(true)
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 1500))
-    router.push('/dashboard?booking=success')
+    setError('')
+
+    try {
+      // Format date as YYYY-MM-DD
+      const appointmentDate = date.toISOString().split('T')[0]
+
+      const result = await createAppointment({
+        hospital_id: hospital.id,
+        department_id: department.id,
+        appointment_date: appointmentDate,
+        start_time: time,
+        reason: reason || undefined,
+      })
+
+      if (result.success && result.reference_number) {
+        setSuccess({ referenceNumber: result.reference_number })
+      } else {
+        setError(result.error || 'Failed to create appointment')
+      }
+    } catch (err) {
+      setError('An unexpected error occurred')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const formatDate = (d: Date | null) => {
@@ -614,6 +667,42 @@ function ConfirmBooking({
       month: 'long',
       day: 'numeric',
     })
+  }
+
+  // Success state
+  if (success) {
+    return (
+      <div className="text-center py-12">
+        <div className="w-20 h-20 mx-auto mb-6 rounded-full bg-warning/10 flex items-center justify-center">
+          <svg className="w-10 h-10 text-warning" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+          </svg>
+        </div>
+
+        <h1 className="text-h1 text-gray-900 mb-2">Booking Submitted!</h1>
+        <p className="text-body text-gray-600 mb-6 max-w-md mx-auto">
+          Your appointment request has been submitted and is awaiting hospital approval.
+          You will receive a notification once the hospital confirms your booking.
+        </p>
+
+        <Card className="max-w-sm mx-auto mb-8">
+          <CardContent className="p-6">
+            <p className="text-body-sm text-gray-500 mb-1">{t('success.referenceNumber')}</p>
+            <p className="text-h2 font-mono text-primary">{success.referenceNumber}</p>
+            <p className="text-body-sm text-gray-500 mt-2">{t('success.saveReference')}</p>
+          </CardContent>
+        </Card>
+
+        <div className="flex gap-4 justify-center">
+          <Button variant="outline" onClick={() => router.push('/dashboard/appointments')}>
+            {t('success.viewAppointments')}
+          </Button>
+          <Button onClick={() => router.push('/dashboard')}>
+            Go to Dashboard
+          </Button>
+        </div>
+      </div>
+    )
   }
 
   return (
@@ -629,6 +718,12 @@ function ConfirmBooking({
       </button>
 
       <h1 className="text-h1 text-gray-900 mb-6">{t('confirmation.title')}</h1>
+
+      {error && (
+        <div className="mb-6 p-4 rounded-lg bg-error/10 text-error">
+          {error}
+        </div>
+      )}
 
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 space-y-6">
@@ -653,7 +748,7 @@ function ConfirmBooking({
 
                 <div className="flex items-start gap-4">
                   <div className="w-10 h-10 bg-secondary-100 rounded-lg flex items-center justify-center">
-                    <span className="text-lg">{department?.icon}</span>
+                    <span className="text-lg">🏥</span>
                   </div>
                   <div>
                     <p className="text-body-sm text-gray-500">{t('confirmation.department')}</p>
@@ -680,11 +775,11 @@ function ConfirmBooking({
           {/* Reason for Visit */}
           <Card>
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">{t('confirmation.patientDetails')}</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">Reason for Visit</h2>
               <textarea
                 value={reason}
                 onChange={(e) => setReason(e.target.value)}
-                placeholder={t('confirmation.consultationFee')}
+                placeholder="Describe your symptoms or reason for this appointment..."
                 className="w-full h-24 p-3 rounded-lg border border-gray-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none resize-none"
               />
             </CardContent>
@@ -724,12 +819,16 @@ function ConfirmBooking({
         <div>
           <Card className="sticky top-24">
             <CardContent className="p-6">
-              <h2 className="text-h3 text-gray-900 mb-4">{t('confirmation.appointmentDetails')}</h2>
+              <h2 className="text-h3 text-gray-900 mb-4">Summary</h2>
 
               <div className="space-y-3 mb-6 pb-6 border-b border-gray-200">
                 <div className="flex justify-between text-body-sm">
                   <span className="text-gray-500">{t('confirmation.consultationFee')}</span>
                   <span className="text-gray-900">Free (NHIS)</span>
+                </div>
+                <div className="flex justify-between text-body-sm">
+                  <span className="text-gray-500">Status</span>
+                  <Badge variant="warning">Pending Approval</Badge>
                 </div>
               </div>
 
@@ -761,6 +860,10 @@ function ConfirmBooking({
               >
                 {t('confirmation.confirmButton')}
               </Button>
+
+              <p className="text-body-sm text-gray-500 mt-4 text-center">
+                {t('confirmation.cancellationNote')}
+              </p>
             </CardContent>
           </Card>
         </div>
