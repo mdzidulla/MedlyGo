@@ -107,7 +107,7 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create hospital record (only using columns that exist in schema)
+    // Create hospital record
     const { data: hospitalData, error: hospitalError } = await supabaseAdmin
       .from('hospitals')
       .insert({
@@ -117,6 +117,8 @@ export async function POST(request: Request) {
         region,
         phone,
         email,
+        website: website || null,
+        type: type || 'public',
         description: description || null,
         is_active: true,
       })
