@@ -153,6 +153,8 @@ export interface Database {
           region: string
           phone: string | null
           email: string | null
+          website: string | null
+          type: 'public' | 'private'
           description: string | null
           image_url: string | null
           latitude: number | null
@@ -174,6 +176,8 @@ export interface Database {
           region: string
           phone?: string | null
           email?: string | null
+          website?: string | null
+          type?: 'public' | 'private'
           description?: string | null
           image_url?: string | null
           latitude?: number | null
@@ -195,6 +199,8 @@ export interface Database {
           region?: string
           phone?: string | null
           email?: string | null
+          website?: string | null
+          type?: 'public' | 'private'
           description?: string | null
           image_url?: string | null
           latitude?: number | null

@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { deleteHospital, reactivateHospital } from '@/lib/admin/actions'
+import type { Hospital as HospitalType, Department as DepartmentType } from '@/types/database'
 
 // Ghana regions
 const GHANA_REGIONS = [
@@ -29,26 +30,8 @@ const GHANA_REGIONS = [
   'Savannah',
 ]
 
-interface Hospital {
-  id: string
-  name: string
-  address: string
-  city: string
-  region: string
-  phone: string
-  email: string
-  website: string | null
-  type: 'public' | 'private'
-  description: string | null
-  is_active: boolean
-  created_at: string
-}
-
-interface Department {
-  id: string
-  name: string
-  hospital_id: string
-}
+type Hospital = HospitalType
+type Department = DepartmentType
 
 export default function EditHospitalPage() {
   const params = useParams()
@@ -75,24 +58,27 @@ export default function EditHospitalPage() {
   })
 
   const supabase = createClient()
+  // eslint-disable-next-line
+  const client = supabase as any
 
   // Fetch hospital data
   React.useEffect(() => {
     async function fetchHospital() {
       try {
-        const { data: hospitalData, error: hospitalError } = await supabase
+        const { data, error: hospitalError } = await client
           .from('hospitals')
           .select('*')
           .eq('id', hospitalId)
           .single()
 
-        if (hospitalError || !hospitalData) {
+        if (hospitalError || !data) {
           setError('Hospital not found')
           setIsLoading(false)
           return
         }
 
-        setHospital(hospitalData as Hospital)
+        const hospitalData = data as Hospital
+        setHospital(hospitalData)
         setFormData({
           name: hospitalData.name || '',
           address: hospitalData.address || '',
@@ -106,7 +92,7 @@ export default function EditHospitalPage() {
         })
 
         // Fetch departments
-        const { data: deptData } = await supabase
+        const { data: deptData } = await client
           .from('departments')
           .select('*')
           .eq('hospital_id', hospitalId)
@@ -126,7 +112,8 @@ export default function EditHospitalPage() {
     if (hospitalId) {
       fetchHospital()
     }
-  }, [hospitalId, supabase])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hospitalId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target
@@ -140,7 +127,7 @@ export default function EditHospitalPage() {
     setSuccess('')
 
     try {
-      const { error: updateError } = await supabase
+      const { error: updateError } = await client
         .from('hospitals')
         .update({
           name: formData.name,
