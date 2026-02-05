@@ -86,20 +86,19 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create user record
+    // Update user record (trigger already creates it, we just need to update with correct role and phone)
     const { error: userRecordError } = await supabaseAdmin
       .from('users')
-      .insert({
-        id: authData.user.id,
-        email: email,
+      .update({
         full_name: name,
         phone: phone,
         role: 'provider',
       })
+      .eq('id', authData.user.id)
 
     if (userRecordError) {
-      console.error('Error creating user record:', userRecordError)
-      // Clean up auth user if user record fails
+      console.error('Error updating user record:', userRecordError)
+      // Clean up auth user if user record update fails
       await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
       return NextResponse.json(
         { error: 'Failed to create user record' },
