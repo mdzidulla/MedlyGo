@@ -36,7 +36,8 @@ export default function HospitalsPage() {
 
   const fetchHospitals = React.useCallback(async () => {
     try {
-      const { data, error } = await supabase
+      // First fetch hospitals
+      const { data: hospitalsData, error: hospitalsError } = await supabase
         .from('hospitals')
         .select(`
           id,
@@ -49,16 +50,41 @@ export default function HospitalsPage() {
           website,
           type,
           is_active,
-          created_at,
-          departments(id, name)
+          created_at
         `)
-        .order('created_at', { ascending: false })
+        .order('created_at', { ascending: false }) as {
+          data: Omit<Hospital, 'departments'>[] | null
+          error: any
+        }
 
-      if (error) {
-        console.error('Error fetching hospitals:', error)
-      } else if (data) {
-        setHospitals(data as unknown as Hospital[])
+      if (hospitalsError) {
+        console.error('Error fetching hospitals:', hospitalsError)
+        setIsLoading(false)
+        return
       }
+
+      if (!hospitalsData || hospitalsData.length === 0) {
+        setHospitals([])
+        setIsLoading(false)
+        return
+      }
+
+      // Fetch departments for each hospital
+      const hospitalIds = hospitalsData.map(h => h.id)
+      const { data: departmentsData } = await supabase
+        .from('departments')
+        .select('id, name, hospital_id')
+        .in('hospital_id', hospitalIds) as {
+          data: { id: string; name: string; hospital_id: string }[] | null
+        }
+
+      // Map departments to hospitals
+      const hospitalsWithDepts: Hospital[] = hospitalsData.map(hospital => ({
+        ...hospital,
+        departments: departmentsData?.filter(d => d.hospital_id === hospital.id).map(d => ({ id: d.id, name: d.name })) || []
+      }))
+
+      setHospitals(hospitalsWithDepts)
     } catch (error) {
       console.error('Error:', error)
     } finally {

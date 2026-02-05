@@ -2,10 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { createHospital } from '@/lib/admin/actions'
 
 // Ghana regions
 const GHANA_REGIONS = [
@@ -91,10 +89,18 @@ export default function NewHospitalPage() {
     setError('')
 
     try {
-      const result = await createHospital({
-        ...formData,
-        departments: selectedDepartments,
+      const response = await fetch('/api/admin/hospitals', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...formData,
+          departments: selectedDepartments,
+        }),
       })
+
+      const result = await response.json()
 
       if (result.success && result.credentials) {
         setCredentials(result.credentials)
