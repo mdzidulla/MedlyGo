@@ -19,8 +19,8 @@ interface RecentAppointment {
   id: string
   created_at: string
   status: string
-  patient: { full_name: string } | null
-  hospital: { name: string } | null
+  patients: { users: { full_name: string } | null } | null
+  hospitals: { name: string } | null
 }
 
 export default function AdminDashboard() {
@@ -42,6 +42,7 @@ export default function AdminDashboard() {
       const today = new Date().toISOString().split('T')[0]
 
       // Fetch all stats in parallel
+      // Count only users with role='patient' who have a patients record
       const [
         { count: totalPatients },
         { count: totalHospitals },
@@ -51,7 +52,7 @@ export default function AdminDashboard() {
         { count: pendingAppointments },
         { data: recentAppts },
       ] = await Promise.all([
-        supabase.from('patients').select('*', { count: 'exact', head: true }),
+        supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'patient'),
         supabase.from('hospitals').select('*', { count: 'exact', head: true }),
         supabase.from('hospitals').select('*', { count: 'exact', head: true }).eq('is_active', true),
         supabase.from('appointments').select('*', { count: 'exact', head: true }),
@@ -63,8 +64,8 @@ export default function AdminDashboard() {
             id,
             created_at,
             status,
-            patient:patients(full_name),
-            hospital:hospitals(name)
+            patients(users(full_name)),
+            hospitals(name)
           `)
           .order('created_at', { ascending: false })
           .limit(5),
@@ -354,14 +355,14 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-body-sm text-gray-900 truncate">
-                          {apt.patient?.full_name || 'Unknown Patient'}
+                          {apt.patients?.users?.full_name || 'Unknown Patient'}
                         </p>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
                           {apt.status}
                         </span>
                       </div>
                       <p className="text-body-sm text-gray-500 truncate">
-                        {apt.hospital?.name || 'Unknown Hospital'}
+                        {apt.hospitals?.name || 'Unknown Hospital'}
                       </p>
                       <p className="text-body-sm text-gray-400">{formatTimeAgo(apt.created_at)}</p>
                     </div>

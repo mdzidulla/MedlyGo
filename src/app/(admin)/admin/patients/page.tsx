@@ -21,6 +21,7 @@ interface Patient {
     full_name: string
     email: string
     phone: string | null
+    role: string
   }
 }
 
@@ -47,8 +48,9 @@ export default function PatientsPage() {
           emergency_contact_phone,
           emergency_contact_relationship,
           created_at,
-          users(full_name, email, phone)
+          users!inner(full_name, email, phone, role)
         `)
+        .eq('users.role', 'patient')
         .order('created_at', { ascending: false })
 
       if (error) {
