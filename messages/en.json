@@ -469,6 +469,81 @@
       "checkIn": "Check In"
     }
   },
+  "admin": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "providers": "Providers",
+      "hospitals": "Hospitals",
+      "patients": "Patients",
+      "appointments": "Appointments",
+      "settings": "Settings"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "subtitle": "Welcome back! Here's an overview of your platform.",
+      "totalPatients": "Total Patients",
+      "totalHospitals": "Hospitals",
+      "totalProviders": "Providers",
+      "pendingApprovals": "Pending Approvals",
+      "totalAppointments": "Total Appointments",
+      "todayAppointments": "Today's Appointments",
+      "quickActions": "Quick Actions",
+      "recentActivity": "Recent Activity",
+      "noRecentActivity": "No recent activity",
+      "onboardProvider": "Onboard New Provider",
+      "onboardProviderDesc": "Add a hospital staff member",
+      "manageHospitals": "Manage Hospitals",
+      "manageHospitalsDesc": "View and edit hospital details",
+      "viewAppointments": "View All Appointments",
+      "viewAppointmentsDesc": "Monitor system-wide bookings"
+    },
+    "providers": {
+      "title": "Providers",
+      "subtitle": "Manage hospital staff accounts",
+      "onboardProvider": "Onboard Provider",
+      "searchPlaceholder": "Search providers by name, email, hospital...",
+      "noProviders": "No providers yet",
+      "noProvidersDesc": "Get started by onboarding your first provider",
+      "noProvidersFound": "No providers found",
+      "noProvidersFoundDesc": "Try a different search term",
+      "onboardFirst": "Onboard First Provider",
+      "active": "Active",
+      "inactive": "Inactive",
+      "deactivate": "Deactivate",
+      "deactivating": "Deactivating...",
+      "added": "Added"
+    },
+    "onboarding": {
+      "title": "Onboard New Provider",
+      "subtitle": "Create an account for a hospital staff member to access the provider portal.",
+      "backToProviders": "Back to Providers",
+      "providerInfo": "Provider Information",
+      "personalInfo": "Personal Information",
+      "hospitalAssignment": "Hospital Assignment",
+      "fullName": "Full Name",
+      "email": "Email Address",
+      "phone": "Phone Number",
+      "hospital": "Hospital",
+      "department": "Department",
+      "specialization": "Specialization",
+      "selectHospital": "Select a hospital",
+      "selectDepartment": "Select a department",
+      "selectHospitalFirst": "Select a hospital first",
+      "createAccount": "Create Provider Account",
+      "creating": "Creating Provider...",
+      "success": {
+        "title": "Provider Created Successfully!",
+        "subtitle": "Share these credentials with the new provider securely.",
+        "email": "Email",
+        "temporaryPassword": "Temporary Password",
+        "copy": "Copy",
+        "copyAll": "Copy All Credentials",
+        "warning": "Important: Share these credentials securely. The provider should change their password after first login.",
+        "viewAllProviders": "View All Providers",
+        "onboardAnother": "Onboard Another"
+      }
+    }
+  },
   "support": {
     "title": "Support Center",
     "subtitle": "How can we help you today?",

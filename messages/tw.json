@@ -469,6 +469,81 @@
       "checkIn": "Check In"
     }
   },
+  "admin": {
+    "nav": {
+      "dashboard": "Dashboard",
+      "providers": "Providers",
+      "hospitals": "Ayaresabea",
+      "patients": "Ayarefoɔ",
+      "appointments": "Appointments",
+      "settings": "Nhyehyɛe"
+    },
+    "dashboard": {
+      "title": "Admin Dashboard",
+      "subtitle": "Akwaaba bio! Nhwɛso a ɛfa wo platform ho niɛ.",
+      "totalPatients": "Ayarefoɔ Nyinaa",
+      "totalHospitals": "Ayaresabea",
+      "totalProviders": "Providers",
+      "pendingApprovals": "Ɛretwɛn Penesu",
+      "totalAppointments": "Appointments Nyinaa",
+      "todayAppointments": "Ɛnnɛ Appointments",
+      "quickActions": "Nneɛma Ntɛm",
+      "recentActivity": "Nneɛma a Ɛtwaam",
+      "noRecentActivity": "Biribi nni hɔ a atwam",
+      "onboardProvider": "De Provider Foforɔ Bɛka Ho",
+      "onboardProviderDesc": "De ayaresabea obi bɛka ho",
+      "manageHospitals": "Hwɛ Ayaresabea So",
+      "manageHospitalsDesc": "Hwɛ na sesa ayaresabea nsɛm",
+      "viewAppointments": "Hwɛ Appointments Nyinaa",
+      "viewAppointmentsDesc": "Hwɛ booking nyinaa"
+    },
+    "providers": {
+      "title": "Providers",
+      "subtitle": "Hwɛ ayaresabea nnipa accounts so",
+      "onboardProvider": "De Provider Bɛka Ho",
+      "searchPlaceholder": "Hwehwɛ providers de din, email, ayaresabea...",
+      "noProviders": "Provider biara nni hɔ",
+      "noProvidersDesc": "Hyɛ aseɛ de provider a edi kan bɛka ho",
+      "noProvidersFound": "Yɛanhu provider biara",
+      "noProvidersFoundDesc": "Sɔ hwehwɛ foforɔ",
+      "onboardFirst": "De Provider a Ɛdi Kan Bɛka Ho",
+      "active": "Ɛyɛ Adwuma",
+      "inactive": "Ɛnyɛ Adwuma",
+      "deactivate": "Gyae Adwuma",
+      "deactivating": "Ɛregyae Adwuma...",
+      "added": "Wɔde Bɛkaa Ho"
+    },
+    "onboarding": {
+      "title": "De Provider Foforɔ Bɛka Ho",
+      "subtitle": "Yi account ma ayaresabea obi sɛ ɔbɛwura provider portal mu.",
+      "backToProviders": "San Kɔ Providers",
+      "providerInfo": "Provider Nsɛm",
+      "personalInfo": "Wo Ho Nsɛm",
+      "hospitalAssignment": "Ayaresabea a Wɔde No Bɛhyɛ",
+      "fullName": "Din Nyinaa",
+      "email": "Email Address",
+      "phone": "Fon Number",
+      "hospital": "Ayaresabea",
+      "department": "Department",
+      "specialization": "Adwumayɛ Titiriw",
+      "selectHospital": "Yi ayaresabea",
+      "selectDepartment": "Yi department",
+      "selectHospitalFirst": "Yi ayaresabea kan",
+      "createAccount": "Yi Provider Account",
+      "creating": "Ɛreyi Provider...",
+      "success": {
+        "title": "Wɔayi Provider yie!",
+        "subtitle": "De credentials yi kɔma provider foforɔ no yiye.",
+        "email": "Email",
+        "temporaryPassword": "Password Bere Tiawa",
+        "copy": "Copy",
+        "copyAll": "Copy Credentials Nyinaa",
+        "warning": "Ɛho hia: De credentials yi yiye. Provider no ɛsɛ sɛ ɔsesa ne password sɛ ɔwura mu a edi kan.",
+        "viewAllProviders": "Hwɛ Providers Nyinaa",
+        "onboardAnother": "De Foforɔ Bɛka Ho"
+      }
+    }
+  },
   "support": {
     "title": "Mmoa Center",
     "subtitle": "Ɛyɛ dɛn na yɛbɛboa wo ɛnnɛ?",
