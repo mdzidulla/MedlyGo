@@ -16,8 +16,7 @@ interface Hospital {
   region: string
   phone: string
   email: string
-  website: string | null
-  type: 'public' | 'private'
+  description: string | null
   is_active: boolean
   created_at: string
   departments: { id: string; name: string }[]
@@ -47,8 +46,7 @@ export default function HospitalsPage() {
           region,
           phone,
           email,
-          website,
-          type,
+          description,
           is_active,
           created_at
         `)
@@ -274,9 +272,6 @@ export default function HospitalsPage() {
                         <h3 className="text-label text-gray-900">{hospital.name}</h3>
                         <Badge variant={hospital.is_active ? 'success' : 'secondary'}>
                           {hospital.is_active ? 'Active' : 'Inactive'}
-                        </Badge>
-                        <Badge variant={hospital.type === 'public' ? 'info' : 'warning'}>
-                          {hospital.type}
                         </Badge>
                       </div>
                       <p className="text-body-sm text-gray-600 mb-2">

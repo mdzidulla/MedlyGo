@@ -11,9 +11,9 @@ interface Appointment {
   hospital_id: string
   department_id: string | null
   appointment_date: string
-  appointment_time: string
+  start_time: string
   status: string
-  reason: string | null
+  notes: string | null
   reference_number: string | null
   created_at: string
   patients: {
@@ -50,9 +50,9 @@ export default function AppointmentsPage() {
           hospital_id,
           department_id,
           appointment_date,
-          appointment_time,
+          start_time,
           status,
-          reason,
+          notes,
           reference_number,
           created_at,
           patients(users(full_name, email)),
@@ -251,9 +251,9 @@ export default function AppointmentsPage() {
                         {appointment.hospitals?.name || 'Unknown Hospital'}
                         {appointment.departments?.name && ` • ${appointment.departments.name}`}
                       </p>
-                      {appointment.reason && (
+                      {appointment.notes && (
                         <p className="text-body-sm text-gray-500 truncate">
-                          Reason: {appointment.reason}
+                          Notes: {appointment.notes}
                         </p>
                       )}
                     </div>
@@ -264,7 +264,7 @@ export default function AppointmentsPage() {
                       {formatDate(appointment.appointment_date)}
                     </p>
                     <p className="text-body-sm text-gray-600">
-                      {formatTime(appointment.appointment_time)}
+                      {formatTime(appointment.start_time)}
                     </p>
                   </div>
                 </div>

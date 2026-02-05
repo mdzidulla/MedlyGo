@@ -49,7 +49,7 @@ export default function NewHospitalPage() {
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState('')
 
-  // Form state
+  // Form state (only fields that exist in current schema)
   const [formData, setFormData] = React.useState({
     name: '',
     address: '',
@@ -57,8 +57,6 @@ export default function NewHospitalPage() {
     region: '',
     phone: '',
     email: '',
-    website: '',
-    type: 'public' as 'public' | 'private',
     description: '',
   })
 
@@ -212,8 +210,6 @@ export default function NewHospitalPage() {
                     region: '',
                     phone: '',
                     email: '',
-                    website: '',
-                    type: 'public',
                     description: '',
                   })
                   setSelectedDepartments([])
@@ -272,23 +268,6 @@ export default function NewHospitalPage() {
                   className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
                   placeholder="e.g., Korle Bu Teaching Hospital"
                 />
-              </div>
-
-              <div>
-                <label htmlFor="type" className="block text-label text-gray-700 mb-1">
-                  Type <span className="text-error">*</span>
-                </label>
-                <select
-                  id="type"
-                  name="type"
-                  value={formData.type}
-                  onChange={handleChange}
-                  required
-                  className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                >
-                  <option value="public">Public</option>
-                  <option value="private">Private</option>
-                </select>
               </div>
 
               <div>
@@ -402,20 +381,6 @@ export default function NewHospitalPage() {
                 </p>
               </div>
 
-              <div className="md:col-span-2">
-                <label htmlFor="website" className="block text-label text-gray-700 mb-1">
-                  Website <span className="text-gray-400">(Optional)</span>
-                </label>
-                <input
-                  type="url"
-                  id="website"
-                  name="website"
-                  value={formData.website}
-                  onChange={handleChange}
-                  className="w-full h-12 px-4 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
-                  placeholder="https://www.hospital.com"
-                />
-              </div>
             </div>
           </CardContent>
         </Card>

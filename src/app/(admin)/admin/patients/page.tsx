@@ -10,13 +10,12 @@ interface Patient {
   user_id: string
   date_of_birth: string | null
   gender: string | null
-  blood_type: string | null
-  allergies: string[] | null
-  medical_conditions: string[] | null
+  address: string | null
+  ghana_card_id: string | null
+  nhis_number: string | null
   emergency_contact_name: string | null
   emergency_contact_phone: string | null
-  insurance_provider: string | null
-  insurance_number: string | null
+  emergency_contact_relationship: string | null
   created_at: string
   users: {
     full_name: string
@@ -41,13 +40,12 @@ export default function PatientsPage() {
           user_id,
           date_of_birth,
           gender,
-          blood_type,
-          allergies,
-          medical_conditions,
+          address,
+          ghana_card_id,
+          nhis_number,
           emergency_contact_name,
           emergency_contact_phone,
-          insurance_provider,
-          insurance_number,
+          emergency_contact_relationship,
           created_at,
           users(full_name, email, phone)
         `)
@@ -176,8 +174,8 @@ export default function PatientsPage() {
                       {calculateAge(patient.date_of_birth) && (
                         <Badge variant="secondary">{calculateAge(patient.date_of_birth)} yrs</Badge>
                       )}
-                      {patient.blood_type && (
-                        <Badge variant="info">{patient.blood_type}</Badge>
+                      {patient.nhis_number && (
+                        <Badge variant="info">NHIS</Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-body-sm text-gray-500">
@@ -200,9 +198,9 @@ export default function PatientsPage() {
                   </div>
 
                   <div className="text-right flex-shrink-0">
-                    {patient.insurance_provider && (
-                      <p className="text-body-sm text-gray-600">
-                        <span className="text-gray-400">Insurance:</span> {patient.insurance_provider}
+                    {patient.address && (
+                      <p className="text-body-sm text-gray-600 max-w-[200px] truncate">
+                        {patient.address}
                       </p>
                     )}
                   </div>
