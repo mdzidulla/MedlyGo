@@ -306,6 +306,36 @@
       "and": "and",
       "creatingAccount": "Creating Account...",
       "accountCreated": "Account created! Check your email for a confirmation link. Redirecting to login..."
+    },
+    "forgotPassword": {
+      "title": "Forgot Password",
+      "subtitle": "Enter your email and we'll send you a link to reset your password",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "Enter your email",
+      "submitButton": "Send Reset Link",
+      "rememberPassword": "Remember your password?",
+      "loginLink": "Sign In",
+      "emailSent": "Check Your Email",
+      "checkInbox": "We've sent a password reset link to your email address.",
+      "checkSpam": "If you don't see it, check your spam folder.",
+      "backToLogin": "Back to Login"
+    },
+    "resetPassword": {
+      "title": "Set New Password",
+      "subtitle": "Enter your new password below",
+      "passwordLabel": "New Password",
+      "passwordPlaceholder": "At least 8 characters",
+      "confirmLabel": "Confirm Password",
+      "confirmPlaceholder": "Re-enter your password",
+      "submitButton": "Update Password",
+      "updating": "Updating Password...",
+      "moreChars": "more characters needed",
+      "strongPassword": "Strong password",
+      "rememberPassword": "Remember your password?",
+      "loginLink": "Sign In",
+      "success": "Password Updated!",
+      "successMessage": "Your password has been successfully reset. You will be redirected to the login page shortly.",
+      "goToLogin": "Go to Login"
     }
   },
   "chat": {

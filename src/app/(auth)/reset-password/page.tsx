@@ -4,6 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { useRouter } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
@@ -11,6 +12,10 @@ import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const t = useTranslations('auth.resetPassword')
+  const tErrors = useTranslations('errors')
+  const tCommon = useTranslations('common')
+
   const [isLoading, setIsLoading] = React.useState(false)
   const [error, setError] = React.useState('')
   const [success, setSuccess] = React.useState(false)
@@ -22,17 +27,17 @@ export default function ResetPasswordPage() {
     setError('')
 
     if (!password || !confirmPassword) {
-      setError('Please fill in all fields')
+      setError(tErrors('fillAllFields'))
       return
     }
 
     if (password !== confirmPassword) {
-      setError('Passwords do not match')
+      setError(tErrors('passwordMismatch'))
       return
     }
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters')
+      setError(tErrors('passwordMinLength'))
       return
     }
 
@@ -54,7 +59,7 @@ export default function ResetPasswordPage() {
         router.push('/login')
       }, 3000)
     } catch (err) {
-      setError('An unexpected error occurred')
+      setError(tErrors('unexpectedError'))
     } finally {
       setIsLoading(false)
     }
@@ -76,7 +81,7 @@ export default function ResetPasswordPage() {
                   className="object-contain"
                 />
               </div>
-              <span className="text-h3 font-bold text-primary">MedlyGo</span>
+              <span className="text-h3 font-bold text-primary">{tCommon('appName')}</span>
             </Link>
           </div>
         </header>
@@ -100,16 +105,16 @@ export default function ResetPasswordPage() {
                 </svg>
               </div>
 
-              <h1 className="text-h1 text-gray-900 mb-2">Password Updated!</h1>
+              <h1 className="text-h1 text-gray-900 mb-2">{t('success')}</h1>
               <p className="text-body text-gray-600 mb-6">
-                Your password has been successfully reset. You will be redirected to the login page shortly.
+                {t('successMessage')}
               </p>
 
               <Link
                 href="/login"
                 className="inline-flex items-center justify-center w-full h-11 px-6 py-2 bg-primary text-white rounded-lg font-medium hover:bg-primary-600 transition-all"
               >
-                Go to Login
+                {t('goToLogin')}
               </Link>
             </CardContent>
           </Card>
@@ -133,7 +138,7 @@ export default function ResetPasswordPage() {
                 className="object-contain"
               />
             </div>
-            <span className="text-h3 font-bold text-primary">MedlyGo</span>
+            <span className="text-h3 font-bold text-primary">{tCommon('appName')}</span>
           </Link>
         </div>
       </header>
@@ -142,9 +147,9 @@ export default function ResetPasswordPage() {
         <Card className="w-full max-w-md">
           <CardContent className="p-8">
             <div className="text-center mb-8">
-              <h1 className="text-h1 text-gray-900 mb-2">Set New Password</h1>
+              <h1 className="text-h1 text-gray-900 mb-2">{t('title')}</h1>
               <p className="text-body text-gray-600">
-                Enter your new password below
+                {t('subtitle')}
               </p>
             </div>
 
@@ -156,18 +161,18 @@ export default function ResetPasswordPage() {
 
             <form onSubmit={handleSubmit} className="space-y-4">
               <Input
-                label="New Password"
+                label={t('passwordLabel')}
                 type="password"
-                placeholder="At least 8 characters"
+                placeholder={t('passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
               />
 
               <Input
-                label="Confirm Password"
+                label={t('confirmLabel')}
                 type="password"
-                placeholder="Re-enter your password"
+                placeholder={t('confirmPlaceholder')}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
                 required
@@ -192,8 +197,8 @@ export default function ResetPasswordPage() {
                   </div>
                   <p className="text-body-sm text-gray-500">
                     {password.length < 8
-                      ? `${8 - password.length} more characters needed`
-                      : '✓ Strong password'}
+                      ? `${8 - password.length} ${t('moreChars')}`
+                      : `✓ ${t('strongPassword')}`}
                   </p>
                 </div>
               )}
@@ -210,18 +215,18 @@ export default function ResetPasswordPage() {
                       <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
                       <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
                     </svg>
-                    Updating Password...
+                    {t('updating')}
                   </>
                 ) : (
-                  'Update Password'
+                  t('submitButton')
                 )}
               </Button>
             </form>
 
             <p className="mt-6 text-center text-body-sm text-gray-600">
-              Remember your password?{' '}
+              {t('rememberPassword')}{' '}
               <Link href="/login" className="text-primary font-medium hover:underline">
-                Sign In
+                {t('loginLink')}
               </Link>
             </p>
           </CardContent>

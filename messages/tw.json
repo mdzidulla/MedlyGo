@@ -306,6 +306,36 @@
       "and": "ne",
       "creatingAccount": "Ɛreyi Account...",
       "accountCreated": "Wɔayi account! Hwɛ wo email ma confirmation link. Ɛrekɔ login..."
+    },
+    "forgotPassword": {
+      "title": "Wowerɛ Wo Password",
+      "subtitle": "Hyɛ wo email na yɛbɛma wo link a wode bɛsesa wo password",
+      "emailLabel": "Email Address",
+      "emailPlaceholder": "Hyɛ wo email",
+      "submitButton": "Mena Reset Link",
+      "rememberPassword": "Wokae wo password?",
+      "loginLink": "Wura Mu",
+      "emailSent": "Hwɛ Wo Email",
+      "checkInbox": "Yɛde password reset link abɛ wo email address.",
+      "checkSpam": "Sɛ wonhu a, hwɛ wo spam folder.",
+      "backToLogin": "San Kɔ Login"
+    },
+    "resetPassword": {
+      "title": "Hyɛ Password Foforɔ",
+      "subtitle": "Hyɛ wo password foforɔ wɔ ase ha",
+      "passwordLabel": "Password Foforɔ",
+      "passwordPlaceholder": "Nkyerɛwde 8 paa",
+      "confirmLabel": "Di Password Dua",
+      "confirmPlaceholder": "San hyɛ wo password",
+      "submitButton": "Sesa Password",
+      "updating": "Ɛresesa Password...",
+      "moreChars": "nkyerɛwde pii hia",
+      "strongPassword": "Password yɛ den",
+      "rememberPassword": "Wokae wo password?",
+      "loginLink": "Wura Mu",
+      "success": "Wɔasesa Password!",
+      "successMessage": "Wɔasesa wo password yie. Yɛde wo rekɔ login page.",
+      "goToLogin": "Kɔ Login"
     }
   },
   "chat": {
