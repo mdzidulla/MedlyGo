@@ -117,7 +117,7 @@ export default function PatientsPage() {
               .eq('patient_id', p.id)
 
             // Get last visit
-            const { data: lastVisit } = await client
+            const { data: lastVisitData } = await client
               .from('appointments')
               .select('appointment_date')
               .eq('hospital_id', hId)
@@ -125,7 +125,8 @@ export default function PatientsPage() {
               .eq('status', 'completed')
               .order('appointment_date', { ascending: false })
               .limit(1)
-              .single()
+
+            const lastVisit = lastVisitData?.[0] || null
 
             patientMap.set(p.id, {
               ...p,

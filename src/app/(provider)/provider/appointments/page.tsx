@@ -51,6 +51,7 @@ export default function ProviderAppointmentsPage() {
   const [suggestedDate, setSuggestedDate] = React.useState('')
   const [suggestedTime, setSuggestedTime] = React.useState('')
   const [suggestReason, setSuggestReason] = React.useState('')
+  const [detailModalOpen, setDetailModalOpen] = React.useState<string | null>(null)
 
   const supabase = createClient()
 
@@ -273,8 +274,108 @@ export default function ProviderAppointmentsPage() {
     )
   }
 
+  // Get appointment details for modal
+  const getAppointmentById = (id: string) => appointments.find(a => a.id === id)
+
   return (
     <div className="space-y-6">
+      {/* Detail Modal */}
+      {detailModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-lg">
+            <CardContent className="p-6">
+              {(() => {
+                const apt = getAppointmentById(detailModalOpen)
+                if (!apt) return null
+                return (
+                  <>
+                    <div className="flex items-center justify-between mb-6">
+                      <h3 className="text-h3 text-gray-900">Appointment Details</h3>
+                      <button
+                        onClick={() => setDetailModalOpen(null)}
+                        className="p-2 hover:bg-gray-100 rounded-lg"
+                      >
+                        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                      </button>
+                    </div>
+
+                    <div className="space-y-4">
+                      {/* Patient Info */}
+                      <div className="p-4 bg-gray-50 rounded-lg">
+                        <h4 className="text-label text-gray-700 mb-2">Patient Information</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Name</span>
+                            <span className="text-body-sm text-gray-900 font-medium">
+                              {apt.patient?.users?.full_name || 'Unknown'}
+                            </span>
+                          </div>
+                          {apt.patient?.users?.phone && (
+                            <div className="flex justify-between">
+                              <span className="text-body-sm text-gray-500">Phone</span>
+                              <span className="text-body-sm text-gray-900">{apt.patient.users.phone}</span>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+
+                      {/* Appointment Info */}
+                      <div className="p-4 bg-primary-50 rounded-lg">
+                        <h4 className="text-label text-gray-700 mb-2">Appointment Information</h4>
+                        <div className="space-y-2">
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Reference</span>
+                            <span className="text-body-sm text-gray-900 font-mono">{apt.reference_number}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Date</span>
+                            <span className="text-body-sm text-gray-900">{formatDate(apt.appointment_date)}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Time</span>
+                            <span className="text-body-sm text-gray-900">{apt.start_time}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Department</span>
+                            <span className="text-body-sm text-gray-900">{apt.department?.name || 'General'}</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span className="text-body-sm text-gray-500">Status</span>
+                            <Badge variant={statusColors[apt.status]}>
+                              {getStatusLabel(apt.status)}
+                            </Badge>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Reason */}
+                      {apt.reason && (
+                        <div className="p-4 bg-yellow-50 rounded-lg">
+                          <h4 className="text-label text-gray-700 mb-2">Reason for Visit</h4>
+                          <p className="text-body-sm text-gray-900">{apt.reason}</p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="mt-6">
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={() => setDetailModalOpen(null)}
+                      >
+                        Close
+                      </Button>
+                    </div>
+                  </>
+                )
+              })()}
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
       {/* Reject Modal */}
       {rejectModalOpen && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
@@ -592,7 +693,7 @@ export default function ProviderAppointmentsPage() {
 
                   {apt.status === 'confirmed' && (
                     <div className="flex gap-2 flex-shrink-0">
-                      <Button size="sm" variant="outline">
+                      <Button size="sm" variant="outline" onClick={() => setDetailModalOpen(apt.id)}>
                         View Details
                       </Button>
                     </div>
