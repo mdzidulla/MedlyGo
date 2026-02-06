@@ -16,8 +16,10 @@ interface Appointment {
   status: 'pending' | 'confirmed' | 'rejected' | 'suggested' | 'cancelled' | 'completed'
   reason: string | null
   patient: {
-    full_name: string
-    phone: string | null
+    users: {
+      full_name: string
+      phone: string | null
+    }
   } | null
   department: {
     name: string
@@ -81,8 +83,7 @@ export default function ProviderAppointmentsPage() {
           status,
           reason,
           patient:patients(
-            full_name,
-            phone
+            users(full_name, phone)
           ),
           department:departments(name)
         `)
@@ -183,7 +184,7 @@ export default function ProviderAppointmentsPage() {
   // Filter appointments
   const filteredAppointments = appointments.filter((apt) => {
     const matchesSearch =
-      (apt.patient?.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (apt.patient?.users?.full_name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       apt.reference_number.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (apt.department?.name || '').toLowerCase().includes(searchQuery.toLowerCase())
 
@@ -484,7 +485,7 @@ export default function ProviderAppointmentsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h3 className="text-label text-gray-900">
-                          {apt.patient?.full_name || 'Unknown Patient'}
+                          {apt.patient?.users?.full_name || 'Unknown Patient'}
                         </h3>
                         <Badge variant={statusColors[apt.status]}>
                           {getStatusLabel(apt.status)}
@@ -503,12 +504,12 @@ export default function ProviderAppointmentsPage() {
                           {formatDate(apt.appointment_date)}
                         </span>
                         <span>Ref: {apt.reference_number}</span>
-                        {apt.patient?.phone && (
+                        {apt.patient?.users?.phone && (
                           <span className="flex items-center gap-1">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                             </svg>
-                            {apt.patient.phone}
+                            {apt.patient.users.phone}
                           </span>
                         )}
                       </div>
