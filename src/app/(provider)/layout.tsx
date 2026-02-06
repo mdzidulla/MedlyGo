@@ -3,8 +3,15 @@
 import * as React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { usePathname } from 'next/navigation'
+import { usePathname, useRouter } from 'next/navigation'
+import { createClient } from '@/lib/supabase/client'
 import { cn } from '@/lib/utils'
+
+interface HospitalInfo {
+  id: string
+  name: string
+  type: 'public' | 'private'
+}
 
 const navItems = [
   {
@@ -62,7 +69,130 @@ export default function ProviderLayout({
   children: React.ReactNode
 }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
+  const [hospital, setHospital] = React.useState<HospitalInfo | null>(null)
+  const [pendingCount, setPendingCount] = React.useState(0)
+  const [isLoading, setIsLoading] = React.useState(true)
+
+  const supabase = createClient()
+  // eslint-disable-next-line
+  const client = supabase as any
+
+  React.useEffect(() => {
+    async function loadHospitalInfo() {
+      try {
+        const { data: { user } } = await supabase.auth.getUser()
+        if (!user) {
+          router.push('/login')
+          return
+        }
+
+        // Check if user has provider role
+        const { data: userData } = await client
+          .from('users')
+          .select('role')
+          .eq('id', user.id)
+          .single()
+
+        if (!userData || userData.role !== 'provider') {
+          // Not a provider, redirect
+          if (userData?.role === 'admin') {
+            router.push('/admin')
+          } else if (userData?.role === 'patient') {
+            router.push('/dashboard')
+          } else {
+            router.push('/login')
+          }
+          return
+        }
+
+        // Get provider's hospital
+        let hospitalId: string | null = null
+
+        // First try providers table (for doctors/staff)
+        const { data: provider } = await client
+          .from('providers')
+          .select('hospital_id')
+          .eq('user_id', user.id)
+          .single()
+
+        if (provider) {
+          hospitalId = provider.hospital_id
+        } else {
+          // Check if user email matches a hospital email (for hospital admin login)
+          const { data: hospitalByEmail } = await client
+            .from('hospitals')
+            .select('id')
+            .eq('email', user.email)
+            .single()
+
+          if (hospitalByEmail) {
+            hospitalId = hospitalByEmail.id
+          }
+        }
+
+        if (!hospitalId) {
+          console.error('No hospital found for user')
+          setIsLoading(false)
+          return
+        }
+
+        // Fetch hospital info
+        const { data: hospitalData } = await client
+          .from('hospitals')
+          .select('id, name, type')
+          .eq('id', hospitalId)
+          .single()
+
+        if (hospitalData) {
+          setHospital(hospitalData)
+        }
+
+        // Fetch pending appointments count
+        const { count } = await client
+          .from('appointments')
+          .select('*', { count: 'exact', head: true })
+          .eq('hospital_id', hospitalId)
+          .eq('status', 'pending')
+
+        setPendingCount(count || 0)
+
+      } catch (error) {
+        console.error('Error loading hospital info:', error)
+      } finally {
+        setIsLoading(false)
+      }
+    }
+
+    loadHospitalInfo()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut()
+    router.push('/login')
+  }
+
+  const getInitials = (name: string): string => {
+    return name
+      .split(' ')
+      .map(word => word[0])
+      .join('')
+      .toUpperCase()
+      .slice(0, 2)
+  }
+
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-primary border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-gray-600">Loading...</p>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen flex bg-gray-50">
@@ -86,20 +216,21 @@ export default function ProviderLayout({
               />
             </div>
             <span className="text-h3 font-bold text-primary">MedlyGo</span>
-            <span className="ml-auto text-body-sm text-gray-500">Provider</span>
+            <span className="ml-auto text-body-sm text-gray-500">Hospital</span>
           </div>
 
           {/* Navigation */}
           <nav className="flex-1 px-4 py-6 space-y-1">
             {navItems.map((item) => {
-              const isActive = pathname === item.href
+              const isActive = pathname === item.href ||
+                (item.href !== '/provider' && pathname.startsWith(item.href))
 
               return (
                 <Link
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-body transition-colors',
+                    'flex items-center gap-3 px-3 py-2.5 rounded-lg text-body transition-colors relative',
                     isActive
                       ? 'bg-primary-50 text-primary font-medium'
                       : 'text-gray-600 hover:bg-gray-100'
@@ -107,6 +238,11 @@ export default function ProviderLayout({
                 >
                   {item.icon}
                   {item.label}
+                  {item.badge && pendingCount > 0 && (
+                    <span className="absolute right-3 bg-error text-white text-xs px-2 py-0.5 rounded-full">
+                      {pendingCount}
+                    </span>
+                  )}
                 </Link>
               )
             })}
@@ -114,15 +250,24 @@ export default function ProviderLayout({
 
           {/* User Profile */}
           <div className="px-4 py-4 border-t border-gray-200">
-            <div className="flex items-center gap-3 px-3">
+            <div className="flex items-center gap-3 px-3 mb-3">
               <div className="w-10 h-10 bg-secondary rounded-full flex items-center justify-center text-white font-bold">
-                DM
+                {hospital ? getInitials(hospital.name) : 'H'}
               </div>
               <div className="flex-1 min-w-0">
-                <p className="text-label text-gray-900 truncate">Dr. Mensah</p>
-                <p className="text-body-sm text-gray-500 truncate">General Medicine</p>
+                <p className="text-label text-gray-900 truncate">{hospital?.name || 'Hospital'}</p>
+                <p className="text-body-sm text-gray-500 truncate capitalize">{hospital?.type || 'Provider'}</p>
               </div>
             </div>
+            <button
+              onClick={handleSignOut}
+              className="w-full flex items-center gap-3 px-3 py-2 text-body-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              Sign Out
+            </button>
           </div>
         </div>
       </aside>
@@ -151,12 +296,14 @@ export default function ProviderLayout({
           <div className="flex-1" />
 
           {/* Notifications */}
-          <button className="p-2 rounded-lg hover:bg-gray-100 relative">
+          <Link href="/provider/appointments" className="p-2 rounded-lg hover:bg-gray-100 relative">
             <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" />
             </svg>
-            <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
-          </button>
+            {pendingCount > 0 && (
+              <span className="absolute top-1 right-1 w-2 h-2 bg-error rounded-full" />
+            )}
+          </Link>
         </header>
 
         {/* Page Content */}
