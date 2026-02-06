@@ -88,14 +88,36 @@ export default function ProviderLayout({
           return
         }
 
-        // Check if user has provider role
+        // Check if user has provider role or is a hospital user
         const { data: userData } = await client
           .from('users')
           .select('role')
           .eq('id', user.id)
           .single()
 
-        if (!userData || userData.role !== 'provider') {
+        let isProvider = userData?.role === 'provider'
+
+        // Also check if user email matches a hospital email (fallback for hospital logins)
+        if (!isProvider && user.email) {
+          const { data: hospitalMatch } = await client
+            .from('hospitals')
+            .select('id')
+            .eq('email', user.email)
+            .single()
+
+          if (hospitalMatch) {
+            isProvider = true
+            // Update user role to provider if not already set
+            if (userData && userData.role !== 'provider') {
+              await client
+                .from('users')
+                .update({ role: 'provider' })
+                .eq('id', user.id)
+            }
+          }
+        }
+
+        if (!isProvider) {
           // Not a provider, redirect
           if (userData?.role === 'admin') {
             router.push('/admin')

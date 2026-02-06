@@ -64,11 +64,29 @@ export async function updateSession(request: NextRequest) {
   const getUserRole = async (): Promise<UserRole> => {
     if (!user) return 'patient'
 
+    // First check the users table for role
     const { data: userProfile } = await supabase
       .from('users')
       .select('role')
       .eq('id', user.id)
       .single() as { data: { role: UserRole } | null }
+
+    if (userProfile?.role && userProfile.role !== 'patient') {
+      return userProfile.role
+    }
+
+    // Fallback: Check if user email matches a hospital email (for hospital logins)
+    if (user.email) {
+      const { data: hospitalMatch } = await supabase
+        .from('hospitals')
+        .select('id')
+        .eq('email', user.email)
+        .single() as { data: { id: string } | null }
+
+      if (hospitalMatch) {
+        return 'provider'
+      }
+    }
 
     return userProfile?.role || 'patient'
   }
