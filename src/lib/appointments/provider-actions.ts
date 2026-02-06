@@ -33,29 +33,47 @@ export async function approveAppointment(
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get provider info
-    const { data: providerData } = await supabase
+    // Get hospital ID - check providers table first, then hospital email
+    let hospitalId: string | null = null
+    const client: any = supabase
+
+    const { data: providerData } = await client
       .from('providers')
       .select('id, hospital_id')
       .eq('user_id', user.id)
-      .single() as { data: { id: string; hospital_id: string } | null }
+      .single()
 
-    if (!providerData) {
+    if (providerData) {
+      hospitalId = providerData.hospital_id
+    } else {
+      // Check if user email matches a hospital email
+      const { data: hospitalByEmail } = await client
+        .from('hospitals')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (hospitalByEmail) {
+        hospitalId = hospitalByEmail.id
+      }
+    }
+
+    if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await supabase
+    const { data: appointment } = await client
       .from('appointments')
       .select('id, hospital_id, status')
       .eq('id', appointmentId)
-      .single() as { data: { id: string; hospital_id: string; status: string } | null }
+      .single()
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== providerData.hospital_id) {
+    if (appointment.hospital_id !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -64,12 +82,11 @@ export async function approveAppointment(
     }
 
     // Update appointment status to confirmed
-    const client: any = supabase
     const { error } = await client
       .from('appointments')
       .update({
         status: 'confirmed',
-        reviewed_by: providerData.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', appointmentId)
@@ -103,29 +120,47 @@ export async function rejectAppointment(
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get provider info
-    const { data: providerData } = await supabase
+    // Get hospital ID - check providers table first, then hospital email
+    let hospitalId: string | null = null
+    const client: any = supabase
+
+    const { data: providerData } = await client
       .from('providers')
       .select('id, hospital_id')
       .eq('user_id', user.id)
-      .single() as { data: { id: string; hospital_id: string } | null }
+      .single()
 
-    if (!providerData) {
+    if (providerData) {
+      hospitalId = providerData.hospital_id
+    } else {
+      // Check if user email matches a hospital email
+      const { data: hospitalByEmail } = await client
+        .from('hospitals')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (hospitalByEmail) {
+        hospitalId = hospitalByEmail.id
+      }
+    }
+
+    if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await supabase
+    const { data: appointment } = await client
       .from('appointments')
       .select('id, hospital_id, status')
       .eq('id', appointmentId)
-      .single() as { data: { id: string; hospital_id: string; status: string } | null }
+      .single()
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== providerData.hospital_id) {
+    if (appointment.hospital_id !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -134,13 +169,12 @@ export async function rejectAppointment(
     }
 
     // Update appointment status to rejected
-    const client: any = supabase
     const { error } = await client
       .from('appointments')
       .update({
         status: 'rejected',
         rejection_reason: rejectionReason,
-        reviewed_by: providerData.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', appointmentId)
@@ -176,29 +210,47 @@ export async function suggestAlternative(
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get provider info
-    const { data: providerData } = await supabase
+    // Get hospital ID - check providers table first, then hospital email
+    let hospitalId: string | null = null
+    const client: any = supabase
+
+    const { data: providerData } = await client
       .from('providers')
       .select('id, hospital_id')
       .eq('user_id', user.id)
-      .single() as { data: { id: string; hospital_id: string } | null }
+      .single()
 
-    if (!providerData) {
+    if (providerData) {
+      hospitalId = providerData.hospital_id
+    } else {
+      // Check if user email matches a hospital email
+      const { data: hospitalByEmail } = await client
+        .from('hospitals')
+        .select('id')
+        .eq('email', user.email)
+        .single()
+
+      if (hospitalByEmail) {
+        hospitalId = hospitalByEmail.id
+      }
+    }
+
+    if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await supabase
+    const { data: appointment } = await client
       .from('appointments')
       .select('id, hospital_id, status')
       .eq('id', appointmentId)
-      .single() as { data: { id: string; hospital_id: string; status: string } | null }
+      .single()
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== providerData.hospital_id) {
+    if (appointment.hospital_id !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -207,7 +259,6 @@ export async function suggestAlternative(
     }
 
     // Update appointment status to suggested
-    const client: any = supabase
     const { error } = await client
       .from('appointments')
       .update({
@@ -215,7 +266,7 @@ export async function suggestAlternative(
         suggested_date: suggestedDate,
         suggested_time: suggestedTime,
         rejection_reason: reason || 'We have suggested an alternative time slot.',
-        reviewed_by: providerData.id,
+        reviewed_by: user.id,
         reviewed_at: new Date().toISOString(),
       })
       .eq('id', appointmentId)
