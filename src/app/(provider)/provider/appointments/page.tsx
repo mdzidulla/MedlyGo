@@ -59,21 +59,39 @@ export default function ProviderAppointmentsPage() {
       const { data: { user } } = await supabase.auth.getUser()
       if (!user) return
 
-      // Get provider's hospital
-      const { data: provider } = await supabase
+      // Get hospital ID - check providers table first, then hospital email
+      let hospitalId: string | null = null
+      const client: any = supabase
+
+      const { data: providerData } = await client
         .from('providers')
         .select('hospital_id')
         .eq('user_id', user.id)
-        .single() as { data: { hospital_id: string } | null }
+        .single()
 
-      if (!provider) {
-        console.error('Provider not found')
+      if (providerData) {
+        hospitalId = providerData.hospital_id
+      } else {
+        // Check if user email matches a hospital email
+        const { data: hospitalByEmail } = await client
+          .from('hospitals')
+          .select('id')
+          .eq('email', user.email)
+          .single()
+
+        if (hospitalByEmail) {
+          hospitalId = hospitalByEmail.id
+        }
+      }
+
+      if (!hospitalId) {
+        console.error('Hospital not found for this user')
         setIsLoading(false)
         return
       }
 
       // Fetch appointments for this hospital
-      const { data, error } = await supabase
+      const { data, error } = await client
         .from('appointments')
         .select(`
           id,
@@ -83,11 +101,13 @@ export default function ProviderAppointmentsPage() {
           status,
           reason,
           patient:patients(
+            id,
+            user_id,
             users(full_name, phone)
           ),
           department:departments(name)
         `)
-        .eq('hospital_id', provider.hospital_id)
+        .eq('hospital_id', hospitalId)
         .order('appointment_date', { ascending: true })
         .order('start_time', { ascending: true })
 
