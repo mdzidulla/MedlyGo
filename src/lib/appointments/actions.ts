@@ -160,6 +160,77 @@ export async function cancelAppointment(
   }
 }
 
+export async function rescheduleAppointment(
+  appointmentId: string,
+  newDate: string,
+  newTime: string
+): Promise<{ success: boolean; error?: string }> {
+  try {
+    const supabase = await createClient()
+
+    // Get current user
+    const { data: authData, error: userError } = await supabase.auth.getUser()
+    if (userError || !authData?.user) {
+      return { success: false, error: 'Not authenticated' }
+    }
+
+    const userId = authData.user.id
+
+    // Get patient ID for this user
+    const { data: patientRows } = await supabase
+      .from('patients')
+      .select('id')
+      .eq('user_id', userId)
+      .limit(1)
+
+    if (!patientRows || patientRows.length === 0) {
+      return { success: false, error: 'Patient profile not found' }
+    }
+
+    const patientId = (patientRows[0] as { id: string }).id
+
+    // Verify the appointment belongs to this patient and is in a reschedulable state
+    const { data: appointmentRows, error: fetchError } = await supabase
+      .from('appointments')
+      .select('id, status')
+      .eq('id', appointmentId)
+      .eq('patient_id', patientId)
+      .in('status', ['pending', 'confirmed', 'suggested'])
+      .limit(1)
+
+    if (fetchError || !appointmentRows || appointmentRows.length === 0) {
+      return { success: false, error: 'Appointment not found or cannot be rescheduled' }
+    }
+
+    // Update appointment with new date/time and set status back to pending (requires re-approval)
+    const client: any = supabase
+    const { error: updateError } = await client
+      .from('appointments')
+      .update({
+        appointment_date: newDate,
+        start_time: newTime,
+        status: 'pending', // Requires hospital re-approval
+      })
+      .eq('id', appointmentId)
+      .eq('patient_id', patientId)
+
+    if (updateError) {
+      console.error('Error rescheduling appointment:', updateError)
+      return { success: false, error: updateError.message }
+    }
+
+    // Revalidate pages
+    revalidatePath('/dashboard/appointments')
+    revalidatePath('/dashboard')
+    revalidatePath('/provider')
+
+    return { success: true }
+  } catch (error) {
+    console.error('Unexpected error rescheduling appointment:', error)
+    return { success: false, error: 'An unexpected error occurred' }
+  }
+}
+
 export async function respondToSuggestion(
   appointmentId: string,
   accept: boolean

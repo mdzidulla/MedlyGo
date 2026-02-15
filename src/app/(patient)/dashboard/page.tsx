@@ -8,6 +8,7 @@ import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { cancelAppointment, rescheduleAppointment } from '@/lib/appointments/actions'
 
 interface Appointment {
   id: string
@@ -42,12 +43,19 @@ function DashboardContent() {
   const tCommon = useTranslations('common')
   const tBooking = useTranslations('booking')
   const tNav = useTranslations('nav')
+  const tAppointments = useTranslations('appointments')
 
   const [showSuccessMessage, setShowSuccessMessage] = React.useState(bookingSuccess)
   const [isLoading, setIsLoading] = React.useState(true)
   const [user, setUser] = React.useState<UserProfile | null>(null)
   const [upcomingAppointments, setUpcomingAppointments] = React.useState<Appointment[]>([])
   const [pastAppointments, setPastAppointments] = React.useState<Appointment[]>([])
+  const [cancelModalOpen, setCancelModalOpen] = React.useState<string | null>(null)
+  const [cancelReason, setCancelReason] = React.useState('')
+  const [actionLoading, setActionLoading] = React.useState<string | null>(null)
+  const [rescheduleModalOpen, setRescheduleModalOpen] = React.useState<string | null>(null)
+  const [rescheduleDate, setRescheduleDate] = React.useState('')
+  const [rescheduleTime, setRescheduleTime] = React.useState('')
 
   const supabase = createClient()
 
@@ -58,85 +66,128 @@ function DashboardContent() {
     }
   }, [bookingSuccess])
 
-  React.useEffect(() => {
-    async function fetchData() {
-      try {
-        const { data: { user: authUser } } = await supabase.auth.getUser()
-        if (!authUser) return
+  const fetchDashboardData = React.useCallback(async () => {
+    try {
+      const { data: { user: authUser } } = await supabase.auth.getUser()
+      if (!authUser) return
 
-        // Get user profile
-        const { data: profile } = await supabase
-          .from('users')
-          .select('full_name, email, phone')
-          .eq('id', authUser.id)
-          .single()
+      // Get user profile
+      const { data: profile } = await supabase
+        .from('users')
+        .select('full_name, email, phone')
+        .eq('id', authUser.id)
+        .single()
 
-        if (profile) {
-          setUser(profile as UserProfile)
-        }
-
-        // Get patient record
-        const { data: patient } = await supabase
-          .from('patients')
-          .select('id')
-          .eq('user_id', authUser.id)
-          .single() as { data: { id: string } | null }
-
-        if (patient) {
-          const now = new Date().toISOString().split('T')[0]
-
-          // Get upcoming appointments
-          const { data: upcoming } = await supabase
-            .from('appointments')
-            .select(`
-              id,
-              appointment_date,
-              start_time,
-              status,
-              reference_number,
-              hospital:hospitals(name),
-              department:departments(name)
-            `)
-            .eq('patient_id', patient.id)
-            .gte('appointment_date', now)
-            .neq('status', 'cancelled')
-            .order('appointment_date', { ascending: true })
-            .limit(5)
-
-          if (upcoming) {
-            setUpcomingAppointments(upcoming as unknown as Appointment[])
-          }
-
-          // Get past appointments
-          const { data: past } = await supabase
-            .from('appointments')
-            .select(`
-              id,
-              appointment_date,
-              start_time,
-              status,
-              reference_number,
-              hospital:hospitals(name),
-              department:departments(name)
-            `)
-            .eq('patient_id', patient.id)
-            .lt('appointment_date', now)
-            .order('appointment_date', { ascending: false })
-            .limit(3)
-
-          if (past) {
-            setPastAppointments(past as unknown as Appointment[])
-          }
-        }
-      } catch (error) {
-        console.error('Error fetching data:', error)
-      } finally {
-        setIsLoading(false)
+      if (profile) {
+        setUser(profile as UserProfile)
       }
-    }
 
-    fetchData()
+      // Get patient record
+      const { data: patient } = await supabase
+        .from('patients')
+        .select('id')
+        .eq('user_id', authUser.id)
+        .single() as { data: { id: string } | null }
+
+      if (patient) {
+        const now = new Date().toISOString().split('T')[0]
+
+        // Get upcoming appointments
+        const { data: upcoming } = await supabase
+          .from('appointments')
+          .select(`
+            id,
+            appointment_date,
+            start_time,
+            status,
+            reference_number,
+            hospital:hospitals(name),
+            department:departments(name)
+          `)
+          .eq('patient_id', patient.id)
+          .gte('appointment_date', now)
+          .neq('status', 'cancelled')
+          .order('appointment_date', { ascending: true })
+          .limit(5)
+
+        if (upcoming) {
+          setUpcomingAppointments(upcoming as unknown as Appointment[])
+        }
+
+        // Get past appointments
+        const { data: past } = await supabase
+          .from('appointments')
+          .select(`
+            id,
+            appointment_date,
+            start_time,
+            status,
+            reference_number,
+            hospital:hospitals(name),
+            department:departments(name)
+          `)
+          .eq('patient_id', patient.id)
+          .lt('appointment_date', now)
+          .order('appointment_date', { ascending: false })
+          .limit(3)
+
+        if (past) {
+          setPastAppointments(past as unknown as Appointment[])
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching data:', error)
+    } finally {
+      setIsLoading(false)
+    }
   }, [supabase])
+
+  React.useEffect(() => {
+    fetchDashboardData()
+  }, [fetchDashboardData])
+
+  const handleCancelAppointment = async (appointmentId: string) => {
+    setActionLoading(appointmentId)
+    try {
+      const result = await cancelAppointment(appointmentId, cancelReason || undefined)
+      if (result.success) {
+        await fetchDashboardData()
+        setCancelModalOpen(null)
+        setCancelReason('')
+      } else {
+        alert(result.error || 'Failed to cancel appointment')
+      }
+    } catch (error) {
+      console.error('Error cancelling appointment:', error)
+      alert('An unexpected error occurred')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleRescheduleAppointment = async (appointmentId: string) => {
+    if (!rescheduleDate || !rescheduleTime) {
+      alert('Please select a new date and time')
+      return
+    }
+    setActionLoading(appointmentId)
+    try {
+      const result = await rescheduleAppointment(appointmentId, rescheduleDate, rescheduleTime)
+      if (result.success) {
+        await fetchDashboardData()
+        setRescheduleModalOpen(null)
+        setRescheduleDate('')
+        setRescheduleTime('')
+      } else {
+        alert(result.error || 'Failed to reschedule appointment')
+      }
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error)
+      alert('An unexpected error occurred')
+    } finally {
+      setActionLoading(null)
+    }
+  }
 
   const getGreeting = () => {
     const hour = new Date().getHours()
@@ -271,8 +322,26 @@ function DashboardContent() {
                             </div>
                           </div>
                           <div className="flex gap-2 sm:flex-col">
-                            <Button variant="outline" size="sm" className="flex-1 sm:flex-none">{t('reschedule')}</Button>
-                            <Button variant="ghost" size="sm" className="flex-1 sm:flex-none text-error hover:text-error hover:bg-error/10">{t('cancel')}</Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              className="flex-1 sm:flex-none"
+                              onClick={() => {
+                                setRescheduleModalOpen(apt.id)
+                                setRescheduleDate(apt.appointment_date)
+                                setRescheduleTime(apt.start_time)
+                              }}
+                            >
+                              {t('reschedule')}
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              className="flex-1 sm:flex-none text-error hover:text-error hover:bg-error/10"
+                              onClick={() => setCancelModalOpen(apt.id)}
+                            >
+                              {t('cancel')}
+                            </Button>
                           </div>
                         </div>
                       </CardContent>
@@ -401,6 +470,111 @@ function DashboardContent() {
           </Card>
         </div>
       </div>
+
+      {/* Cancel Confirmation Modal */}
+      {cancelModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle className="text-error">{tAppointments('cancelAppointment')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-body text-gray-600 mb-4">
+                {tAppointments('cancelConfirmation')}
+              </p>
+              <textarea
+                placeholder={tAppointments('cancelReasonPlaceholder')}
+                value={cancelReason}
+                onChange={(e) => setCancelReason(e.target.value)}
+                className="w-full h-24 p-3 border border-gray-300 rounded-lg mb-4 resize-none focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+              />
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setCancelModalOpen(null)
+                    setCancelReason('')
+                  }}
+                  disabled={actionLoading === cancelModalOpen}
+                >
+                  {tCommon('back')}
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => handleCancelAppointment(cancelModalOpen)}
+                  disabled={actionLoading === cancelModalOpen}
+                >
+                  {actionLoading === cancelModalOpen ? tCommon('loading') : tAppointments('confirmCancel')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader>
+              <CardTitle>{t('reschedule')}</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-body text-gray-600 mb-4">
+                {tAppointments('rescheduleInfo') || 'Select a new date and time for your appointment. This will require re-approval from the hospital.'}
+              </p>
+              <div className="space-y-4 mb-4">
+                <div>
+                  <label className="block text-label text-gray-700 mb-2">
+                    {tBooking('selectDate')}
+                  </label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-label text-gray-700 mb-2">
+                    {tBooking('selectTime')}
+                  </label>
+                  <input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setRescheduleModalOpen(null)
+                    setRescheduleDate('')
+                    setRescheduleTime('')
+                  }}
+                  disabled={actionLoading === rescheduleModalOpen}
+                >
+                  {tCommon('back')}
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => handleRescheduleAppointment(rescheduleModalOpen)}
+                  disabled={actionLoading === rescheduleModalOpen || !rescheduleDate || !rescheduleTime}
+                >
+                  {actionLoading === rescheduleModalOpen ? tCommon('loading') : tCommon('confirm')}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
     </div>
   )
 }

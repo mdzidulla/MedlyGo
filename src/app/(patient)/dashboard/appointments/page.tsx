@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { cancelAppointment, respondToSuggestion } from '@/lib/appointments/actions'
+import { cancelAppointment, respondToSuggestion, rescheduleAppointment } from '@/lib/appointments/actions'
 
 interface Appointment {
   id: string
@@ -53,6 +53,9 @@ export default function AppointmentsPage() {
   const [actionLoading, setActionLoading] = React.useState<string | null>(null)
   const [cancelModalOpen, setCancelModalOpen] = React.useState<string | null>(null)
   const [cancelReason, setCancelReason] = React.useState('')
+  const [rescheduleModalOpen, setRescheduleModalOpen] = React.useState<string | null>(null)
+  const [rescheduleDate, setRescheduleDate] = React.useState('')
+  const [rescheduleTime, setRescheduleTime] = React.useState('')
 
   const supabase = createClient()
 
@@ -132,6 +135,30 @@ export default function AppointmentsPage() {
       }
     } catch (error) {
       console.error('Error responding to suggestion:', error)
+      alert('An unexpected error occurred')
+    } finally {
+      setActionLoading(null)
+    }
+  }
+
+  const handleRescheduleAppointment = async (appointmentId: string) => {
+    if (!rescheduleDate || !rescheduleTime) {
+      alert('Please select a new date and time')
+      return
+    }
+    setActionLoading(appointmentId)
+    try {
+      const result = await rescheduleAppointment(appointmentId, rescheduleDate, rescheduleTime)
+      if (result.success) {
+        await fetchAppointments()
+        setRescheduleModalOpen(null)
+        setRescheduleDate('')
+        setRescheduleTime('')
+      } else {
+        alert(result.error || 'Failed to reschedule appointment')
+      }
+    } catch (error) {
+      console.error('Error rescheduling appointment:', error)
       alert('An unexpected error occurred')
     } finally {
       setActionLoading(null)
@@ -265,6 +292,75 @@ export default function AppointmentsPage() {
                     </span>
                   ) : (
                     t('confirmCancel') || 'Yes, Cancel'
+                  )}
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {/* Reschedule Modal */}
+      {rescheduleModalOpen && (
+        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
+          <Card className="w-full max-w-md">
+            <CardContent className="p-6">
+              <h3 className="text-h3 text-gray-900 mb-4">{t('reschedule')}</h3>
+              <p className="text-body text-gray-600 mb-4">
+                {t('rescheduleInfo') || 'Select a new date and time for your appointment. This will require re-approval from the hospital.'}
+              </p>
+              <div className="space-y-4 mb-4">
+                <div>
+                  <label className="block text-label text-gray-700 mb-2">
+                    {tBooking('selectDate')}
+                  </label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    min={new Date().toISOString().split('T')[0]}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+                <div>
+                  <label className="block text-label text-gray-700 mb-2">
+                    {tBooking('selectTime')}
+                  </label>
+                  <input
+                    type="time"
+                    value={rescheduleTime}
+                    onChange={(e) => setRescheduleTime(e.target.value)}
+                    className="w-full p-3 border border-gray-300 rounded-lg focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none"
+                  />
+                </div>
+              </div>
+              <div className="flex gap-3">
+                <Button
+                  variant="outline"
+                  className="flex-1"
+                  onClick={() => {
+                    setRescheduleModalOpen(null)
+                    setRescheduleDate('')
+                    setRescheduleTime('')
+                  }}
+                >
+                  {tCommon('cancel')}
+                </Button>
+                <Button
+                  className="flex-1"
+                  onClick={() => handleRescheduleAppointment(rescheduleModalOpen)}
+                  disabled={actionLoading === rescheduleModalOpen || !rescheduleDate || !rescheduleTime}
+                >
+                  {actionLoading === rescheduleModalOpen ? (
+                    <span className="flex items-center gap-2">
+                      <svg className="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                      </svg>
+                      {tCommon('loading')}
+                    </span>
+                  ) : (
+                    tCommon('confirm')
                   )}
                 </Button>
               </div>
@@ -451,7 +547,18 @@ export default function AppointmentsPage() {
                       {/* Upcoming (confirmed) - Reschedule & Cancel */}
                       {apt.status === 'confirmed' && isUpcoming && (
                         <>
-                          <Button variant="outline" size="sm" className="flex-1 md:flex-none">{t('reschedule')}</Button>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            className="flex-1 md:flex-none"
+                            onClick={() => {
+                              setRescheduleModalOpen(apt.id)
+                              setRescheduleDate(apt.appointment_date)
+                              setRescheduleTime(apt.start_time)
+                            }}
+                          >
+                            {t('reschedule')}
+                          </Button>
                           <Button
                             variant="ghost"
                             size="sm"

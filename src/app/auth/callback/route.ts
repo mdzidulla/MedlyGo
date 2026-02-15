@@ -8,7 +8,26 @@ export async function GET(request: Request) {
   const type = searchParams.get('type')
   const next = searchParams.get('next') ?? '/dashboard'
 
+  // Check for error params from Supabase
+  const error_param = searchParams.get('error')
+  const error_description = searchParams.get('error_description')
+
   const supabase = await createClient()
+
+  // Handle Supabase error redirects (e.g., expired or already used links)
+  if (error_param) {
+    console.error('Auth callback error:', error_param, error_description)
+
+    // Check if user is already authenticated despite the error
+    // This handles cases where the link was already used but user is confirmed
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email_confirmed_at) {
+      // User is already confirmed, redirect to appropriate page
+      return NextResponse.redirect(`${origin}/dashboard/onboarding`)
+    }
+
+    return NextResponse.redirect(`${origin}/auth/auth-code-error`)
+  }
 
   // Handle OAuth callback (code exchange)
   if (code) {
@@ -19,6 +38,13 @@ export async function GET(request: Request) {
     }
 
     console.error('Auth code exchange error:', error)
+
+    // Check if user is authenticated despite the error
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email_confirmed_at) {
+      return NextResponse.redirect(`${origin}/dashboard/onboarding`)
+    }
+
     return NextResponse.redirect(`${origin}/auth/auth-code-error`)
   }
 
@@ -47,9 +73,28 @@ export async function GET(request: Request) {
     }
 
     console.error('Token verification error:', error)
+
+    // Check if user is already confirmed despite verification error
+    // This handles cases like "Token has already been used"
+    const { data: { user } } = await supabase.auth.getUser()
+    if (user?.email_confirmed_at) {
+      if (type === 'signup') {
+        return NextResponse.redirect(`${origin}/dashboard/onboarding`)
+      }
+      if (type === 'recovery') {
+        return NextResponse.redirect(`${origin}/reset-password`)
+      }
+      return NextResponse.redirect(`${origin}/dashboard`)
+    }
+
     return NextResponse.redirect(`${origin}/auth/auth-code-error`)
   }
 
-  // No code or token_hash provided
+  // No code or token_hash provided - check if user is already logged in
+  const { data: { user } } = await supabase.auth.getUser()
+  if (user?.email_confirmed_at) {
+    return NextResponse.redirect(`${origin}/dashboard`)
+  }
+
   return NextResponse.redirect(`${origin}/auth/auth-code-error`)
 }

@@ -24,6 +24,26 @@ interface QueueAppointment {
   status: string
   reason: string | null
   checked_in_at: string | null
+  appointment_date?: string
+  patient: {
+    id: string
+    user_id: string
+    users: {
+      full_name: string
+      phone: string | null
+    }
+  } | null
+  department: {
+    name: string
+  } | null
+}
+
+interface UpcomingAppointment {
+  id: string
+  reference_number: string
+  start_time: string
+  status: string
+  appointment_date: string
   patient: {
     id: string
     user_id: string
@@ -69,6 +89,7 @@ export default function ProviderDashboard() {
     noShows: 0,
   })
   const [queue, setQueue] = React.useState<QueueAppointment[]>([])
+  const [upcomingAppointments, setUpcomingAppointments] = React.useState<UpcomingAppointment[]>([])
   const [recentActivity, setRecentActivity] = React.useState<RecentActivity[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [actionLoading, setActionLoading] = React.useState<string | null>(null)
@@ -130,7 +151,7 @@ export default function ProviderDashboard() {
       // Fetch today's appointments for stats
       const { data: todayAppointments } = await client
         .from('appointments')
-        .select('id, status, checked_in_at')
+        .select('id, status, checked_in_at, appointment_date')
         .eq('hospital_id', hospitalId)
         .eq('appointment_date', today)
 
@@ -156,6 +177,7 @@ export default function ProviderDashboard() {
           status,
           reason,
           checked_in_at,
+          appointment_date,
           patient:patients(
             id,
             user_id,
@@ -167,6 +189,33 @@ export default function ProviderDashboard() {
         .eq('appointment_date', today)
         .in('status', ['confirmed', 'checked_in', 'in_progress'])
         .order('start_time', { ascending: true })
+
+      // Fetch upcoming appointments (future dates, confirmed status)
+      const { data: upcomingData } = await client
+        .from('appointments')
+        .select(`
+          id,
+          reference_number,
+          start_time,
+          status,
+          appointment_date,
+          patient:patients(
+            id,
+            user_id,
+            users(full_name, phone)
+          ),
+          department:departments(name)
+        `)
+        .eq('hospital_id', hospitalId)
+        .gt('appointment_date', today)
+        .in('status', ['confirmed', 'pending'])
+        .order('appointment_date', { ascending: true })
+        .order('start_time', { ascending: true })
+        .limit(5)
+
+      if (upcomingData) {
+        setUpcomingAppointments(upcomingData)
+      }
 
       if (queueData) {
         setQueue(queueData)
@@ -633,6 +682,76 @@ export default function ProviderDashboard() {
           )}
         </CardContent>
       </Card>
+
+      {/* Upcoming Appointments */}
+      {upcomingAppointments.length > 0 && (
+        <Card>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <CardTitle>Upcoming Appointments</CardTitle>
+            <Link href="/provider/appointments">
+              <Button variant="ghost" size="sm">View All</Button>
+            </Link>
+          </CardHeader>
+          <CardContent>
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead>
+                  <tr className="border-b border-gray-200">
+                    <th className="text-left py-3 px-4 text-label text-gray-500 font-medium">Patient</th>
+                    <th className="text-left py-3 px-4 text-label text-gray-500 font-medium">Date</th>
+                    <th className="text-left py-3 px-4 text-label text-gray-500 font-medium">Time</th>
+                    <th className="text-left py-3 px-4 text-label text-gray-500 font-medium">Department</th>
+                    <th className="text-left py-3 px-4 text-label text-gray-500 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {upcomingAppointments.map((apt) => {
+                    const patientName = apt.patient?.users?.full_name || 'Unknown Patient'
+                    const initials = patientName.split(' ').map(n => n[0]).join('').toUpperCase()
+                    const statusColor = apt.status === 'confirmed'
+                      ? { bg: 'bg-green-100', text: 'text-green-700', dot: 'bg-green-500' }
+                      : { bg: 'bg-yellow-100', text: 'text-yellow-700', dot: 'bg-yellow-500' }
+
+                    return (
+                      <tr
+                        key={apt.id}
+                        className="border-b border-gray-100 hover:bg-gray-50 transition-colors"
+                      >
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 bg-gray-100 rounded-full flex items-center justify-center text-body-sm font-medium text-gray-600">
+                              {initials}
+                            </div>
+                            <div>
+                              <span className="text-label text-gray-900 block">{patientName}</span>
+                              <span className="text-body-sm text-gray-500">{apt.reference_number}</span>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-4 px-4 text-body text-gray-600">
+                          {new Date(apt.appointment_date).toLocaleDateString('en-GH', {
+                            weekday: 'short',
+                            month: 'short',
+                            day: 'numeric',
+                          })}
+                        </td>
+                        <td className="py-4 px-4 text-body text-gray-600">{apt.start_time}</td>
+                        <td className="py-4 px-4 text-body text-gray-600">{apt.department?.name || 'General'}</td>
+                        <td className="py-4 px-4">
+                          <span className={cn('inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium', statusColor.bg, statusColor.text)}>
+                            <span className={cn('w-1.5 h-1.5 rounded-full', statusColor.dot)} />
+                            {apt.status === 'confirmed' ? 'Confirmed' : 'Pending'}
+                          </span>
+                        </td>
+                      </tr>
+                    )
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Quick Stats */}
       <div className="grid md:grid-cols-2 gap-6">
