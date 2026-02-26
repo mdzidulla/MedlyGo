@@ -1,6 +1,8 @@
-import { createClient } from '@supabase/supabase-js'
-import { createClient as createServerClient } from '@/lib/supabase/server'
 import { NextResponse } from 'next/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
+import bcrypt from 'bcryptjs'
+import { HospitalType } from '@prisma/client'
 import { sendEmail, emailTemplates } from '@/services/notifications/email'
 
 // Helper: Generate temporary password
@@ -13,14 +15,16 @@ function generateTemporaryPassword(): string {
   return password
 }
 
+function mapHospitalType(type: string): HospitalType {
+  return type === 'private' ? HospitalType.private_hospital : HospitalType.public_hospital
+}
+
 // POST - Create a new hospital with provider account
 export async function POST(request: Request) {
   try {
-    // Get the current user from the session to verify admin
-    const supabase = await createServerClient()
-    const { data: { user }, error: userError } = await supabase.auth.getUser()
+    const session = await auth()
 
-    if (userError || !user) {
+    if (!session?.user?.id) {
       return NextResponse.json(
         { error: 'Unauthorized' },
         { status: 401 }
@@ -28,13 +32,7 @@ export async function POST(request: Request) {
     }
 
     // Verify admin role
-    const { data: userData } = await supabase
-      .from('users')
-      .select('role')
-      .eq('id', user.id)
-      .single() as { data: { role: string } | null }
-
-    if (userData?.role !== 'admin') {
+    if ((session.user as any).role !== 'admin') {
       return NextResponse.json(
         { error: 'Unauthorized - Admin access required' },
         { status: 403 }
@@ -53,83 +51,53 @@ export async function POST(request: Request) {
       )
     }
 
-    // Create admin client with service role key (doesn't affect current session)
-    const supabaseAdmin = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!,
-      {
-        auth: {
-          autoRefreshToken: false,
-          persistSession: false,
-        },
-      }
-    )
+    // Check if email already exists
+    const existingUser = await prisma.user.findUnique({ where: { email } })
+    if (existingUser) {
+      return NextResponse.json(
+        { error: 'A user with this email already exists' },
+        { status: 400 }
+      )
+    }
 
     // Generate temporary password for the hospital's admin account
     const temporaryPassword = generateTemporaryPassword()
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 12)
 
-    // Create auth user for hospital using admin API
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
-      email: email,
-      password: temporaryPassword,
-      email_confirm: true, // Skip email confirmation since admin is creating
-      user_metadata: {
-        full_name: name,
+    // Create user for hospital provider
+    const newUser = await prisma.user.create({
+      data: {
+        email,
+        password: hashedPassword,
+        fullName: name,
+        name,
+        phone,
         role: 'provider',
+        emailVerified: new Date(),
       },
     })
 
-    if (authError || !authData.user) {
-      console.error('Error creating auth user:', authError)
-      return NextResponse.json(
-        { error: authError?.message || 'Failed to create hospital account' },
-        { status: 500 }
-      )
-    }
-
-    // Update user record (trigger already creates it, we just need to update with correct role and phone)
-    const { error: userRecordError } = await supabaseAdmin
-      .from('users')
-      .update({
-        full_name: name,
-        phone: phone,
-        role: 'provider',
-      })
-      .eq('id', authData.user.id)
-
-    if (userRecordError) {
-      console.error('Error updating user record:', userRecordError)
-      // Clean up auth user if user record update fails
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
-      return NextResponse.json(
-        { error: 'Failed to create user record' },
-        { status: 500 }
-      )
-    }
-
     // Create hospital record
-    const { data: hospitalData, error: hospitalError } = await supabaseAdmin
-      .from('hospitals')
-      .insert({
-        name,
-        address,
-        city,
-        region,
-        phone,
-        email,
-        website: website || null,
-        type: type || 'public',
-        description: description || null,
-        is_active: true,
+    let hospital
+    try {
+      hospital = await prisma.hospital.create({
+        data: {
+          name,
+          address,
+          city,
+          region,
+          phone,
+          email,
+          website: website || null,
+          type: mapHospitalType(type),
+          description: description || null,
+          isActive: true,
+        },
       })
-      .select('id')
-      .single()
-
-    if (hospitalError || !hospitalData) {
+    } catch (hospitalError) {
       console.error('Error creating hospital record:', hospitalError)
-      // Clean up user records if hospital fails
-      await supabaseAdmin.from('users').delete().eq('id', authData.user.id)
-      await supabaseAdmin.auth.admin.deleteUser(authData.user.id)
+      // Clean up user if hospital creation fails
+      await prisma.user.delete({ where: { id: newUser.id } })
       return NextResponse.json(
         { error: 'Failed to create hospital record' },
         { status: 500 }
@@ -137,31 +105,31 @@ export async function POST(request: Request) {
     }
 
     // Create provider record linking user to hospital
-    const { error: providerError } = await supabaseAdmin
-      .from('providers')
-      .insert({
-        user_id: authData.user.id,
-        hospital_id: hospitalData.id,
-        is_active: true,
+    try {
+      await prisma.provider.create({
+        data: {
+          userId: newUser.id,
+          hospitalId: hospital.id,
+          isActive: true,
+        },
       })
-
-    if (providerError) {
+    } catch (providerError) {
       console.error('Error creating provider record:', providerError)
       // Don't fail completely, but log the error
     }
 
     // Create departments for this hospital (if any selected)
     if (departments && departments.length > 0) {
-      const departmentInserts = departments.map((deptName: string) => ({
-        hospital_id: hospitalData.id,
-        name: deptName,
-      }))
+      try {
+        const departmentInserts = departments.map((deptName: string) => ({
+          hospitalId: hospital.id,
+          name: deptName,
+        }))
 
-      const { error: deptError } = await supabaseAdmin
-        .from('departments')
-        .insert(departmentInserts)
-
-      if (deptError) {
+        await prisma.department.createMany({
+          data: departmentInserts,
+        })
+      } catch (deptError) {
         console.error('Error creating departments:', deptError)
         // Don't fail the whole operation for this
       }
@@ -173,7 +141,7 @@ export async function POST(request: Request) {
         hospitalName: name,
         email: email,
         temporaryPassword,
-        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'https://www.medlygo.com'}/login`,
+        loginUrl: `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/login`,
       })
 
       const emailResult = await sendEmail({
@@ -193,7 +161,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      hospitalId: hospitalData.id,
+      hospitalId: hospital.id,
       credentials: {
         email: email,
         temporaryPassword,

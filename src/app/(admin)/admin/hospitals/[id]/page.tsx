@@ -3,12 +3,11 @@
 import * as React from 'react'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getAdminHospitalById } from '@/lib/admin/data-actions'
+import { updateHospital, deleteHospital, reactivateHospital } from '@/lib/admin/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { deleteHospital, reactivateHospital } from '@/lib/admin/actions'
-import type { Hospital as HospitalType, Department as DepartmentType } from '@/types/database'
 
 // Ghana regions
 const GHANA_REGIONS = [
@@ -30,15 +29,36 @@ const GHANA_REGIONS = [
   'Savannah',
 ]
 
-type Hospital = HospitalType
-type Department = DepartmentType
+interface HospitalData {
+  id: string
+  name: string
+  address: string
+  city: string
+  region: string
+  phone: string
+  email: string
+  website: string | null
+  type: 'public' | 'private'
+  description: string | null
+  is_active: boolean
+  departments: { id: string; name: string; description: string | null; is_active: boolean }[]
+  providers: { user: { full_name: string | null; email: string; phone: string | null } }[]
+  appointments: unknown[]
+}
+
+interface Department {
+  id: string
+  name: string
+  description: string | null
+  is_active: boolean
+}
 
 export default function EditHospitalPage() {
   const params = useParams()
   const router = useRouter()
   const hospitalId = params.id as string
 
-  const [hospital, setHospital] = React.useState<Hospital | null>(null)
+  const [hospital, setHospital] = React.useState<HospitalData | null>(null)
   const [departments, setDepartments] = React.useState<Department[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
   const [isSaving, setIsSaving] = React.useState(false)
@@ -57,49 +77,33 @@ export default function EditHospitalPage() {
     description: '',
   })
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   // Fetch hospital data
   React.useEffect(() => {
     async function fetchHospital() {
       try {
-        const { data, error: hospitalError } = await client
-          .from('hospitals')
-          .select('*')
-          .eq('id', hospitalId)
-          .single()
+        const data = await getAdminHospitalById(hospitalId)
 
-        if (hospitalError || !data) {
+        if (!data) {
           setError('Hospital not found')
           setIsLoading(false)
           return
         }
 
-        const hospitalData = data as Hospital
-        setHospital(hospitalData)
+        setHospital(data as HospitalData)
         setFormData({
-          name: hospitalData.name || '',
-          address: hospitalData.address || '',
-          city: hospitalData.city || '',
-          region: hospitalData.region || '',
-          phone: hospitalData.phone || '',
-          email: hospitalData.email || '',
-          website: hospitalData.website || '',
-          type: hospitalData.type || 'public',
-          description: hospitalData.description || '',
+          name: data.name || '',
+          address: data.address || '',
+          city: data.city || '',
+          region: data.region || '',
+          phone: data.phone || '',
+          email: data.email || '',
+          website: data.website || '',
+          type: (data.type as 'public' | 'private') || 'public',
+          description: data.description || '',
         })
 
-        // Fetch departments
-        const { data: deptData } = await client
-          .from('departments')
-          .select('*')
-          .eq('hospital_id', hospitalId)
-          .order('name')
-
-        if (deptData) {
-          setDepartments(deptData as Department[])
+        if (data.departments) {
+          setDepartments(data.departments as Department[])
         }
       } catch (err) {
         console.error('Error fetching hospital:', err)
@@ -112,7 +116,6 @@ export default function EditHospitalPage() {
     if (hospitalId) {
       fetchHospital()
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [hospitalId])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -127,23 +130,20 @@ export default function EditHospitalPage() {
     setSuccess('')
 
     try {
-      const { error: updateError } = await client
-        .from('hospitals')
-        .update({
-          name: formData.name,
-          address: formData.address,
-          city: formData.city,
-          region: formData.region,
-          phone: formData.phone,
-          email: formData.email,
-          website: formData.website || null,
-          type: formData.type,
-          description: formData.description || null,
-        })
-        .eq('id', hospitalId)
+      const result = await updateHospital(hospitalId, {
+        name: formData.name,
+        address: formData.address,
+        city: formData.city,
+        region: formData.region,
+        phone: formData.phone,
+        email: formData.email,
+        website: formData.website || undefined,
+        type: formData.type,
+        description: formData.description || undefined,
+      })
 
-      if (updateError) {
-        throw updateError
+      if (!result.success) {
+        throw new Error(result.error || 'Failed to update hospital')
       }
 
       setSuccess('Hospital updated successfully!')
@@ -152,7 +152,7 @@ export default function EditHospitalPage() {
       setHospital(prev => prev ? { ...prev, ...formData } : null)
     } catch (err) {
       console.error('Error updating hospital:', err)
-      setError('Failed to update hospital')
+      setError(err instanceof Error ? err.message : 'Failed to update hospital')
     } finally {
       setIsSaving(false)
     }

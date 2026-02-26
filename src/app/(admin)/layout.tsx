@@ -5,7 +5,8 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
+import { getAdminUser } from '@/lib/admin/data-actions'
 
 const navItems = [
   {
@@ -66,29 +67,18 @@ export default function AdminLayout({
   const [sidebarOpen, setSidebarOpen] = React.useState(false)
   const [userName, setUserName] = React.useState('Admin')
 
-  const supabase = createClient()
-
   React.useEffect(() => {
     async function fetchUser() {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (user) {
-        const { data: userData } = await supabase
-          .from('users')
-          .select('full_name')
-          .eq('id', user.id)
-          .single() as { data: { full_name: string } | null }
-
-        if (userData?.full_name) {
-          setUserName(userData.full_name)
-        }
+      const result = await getAdminUser()
+      if (result?.full_name) {
+        setUserName(result.full_name)
       }
     }
     fetchUser()
-  }, [supabase])
+  }, [])
 
   const handleLogout = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    await signOut({ callbackUrl: '/login' })
   }
 
   return (

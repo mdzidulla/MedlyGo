@@ -1,11 +1,11 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { getProviderInfo, getProviderPatientsData, getPatientAppointmentHistory } from '@/lib/provider/actions'
 
 interface Patient {
   id: string
@@ -43,108 +43,24 @@ export default function PatientsPage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [hospitalId, setHospitalId] = React.useState<string | null>(null)
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   const fetchPatients = React.useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get hospital ID
-      let hId: string | null = null
-
-      const { data: provider } = await client
-        .from('providers')
-        .select('hospital_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (provider) {
-        hId = provider.hospital_id
-      } else {
-        const { data: hospitalByEmail } = await client
-          .from('hospitals')
-          .select('id')
-          .eq('email', user.email)
-          .single()
-
-        if (hospitalByEmail) {
-          hId = hospitalByEmail.id
-        }
-      }
-
-      if (!hId) {
+      const providerInfo = await getProviderInfo()
+      if (!providerInfo?.hospital) {
         setIsLoading(false)
         return
       }
 
+      const hId = providerInfo.hospital.id
       setHospitalId(hId)
 
-      // Get all unique patients who have appointments at this hospital
-      const { data: appointmentData } = await client
-        .from('appointments')
-        .select(`
-          patient_id,
-          patients!inner(
-            id,
-            user_id,
-            ghana_card_id,
-            date_of_birth,
-            gender,
-            address,
-            emergency_contact_name,
-            emergency_contact_phone,
-            users(full_name, email, phone)
-          )
-        `)
-        .eq('hospital_id', hId)
-        .order('created_at', { ascending: false })
-
-      if (appointmentData) {
-        // Get unique patients with their appointment stats
-        const patientMap = new Map<string, Patient>()
-
-        for (const apt of appointmentData) {
-          const p = apt.patients
-          if (p && !patientMap.has(p.id)) {
-            // Count appointments for this patient at this hospital
-            const { count } = await client
-              .from('appointments')
-              .select('*', { count: 'exact', head: true })
-              .eq('hospital_id', hId)
-              .eq('patient_id', p.id)
-
-            // Get last visit
-            const { data: lastVisitData } = await client
-              .from('appointments')
-              .select('appointment_date')
-              .eq('hospital_id', hId)
-              .eq('patient_id', p.id)
-              .eq('status', 'completed')
-              .order('appointment_date', { ascending: false })
-              .limit(1)
-
-            const lastVisit = lastVisitData?.[0] || null
-
-            patientMap.set(p.id, {
-              ...p,
-              appointment_count: count || 0,
-              last_visit: lastVisit?.appointment_date || null,
-            })
-          }
-        }
-
-        setPatients(Array.from(patientMap.values()))
-      }
-
+      const data = await getProviderPatientsData(hId)
+      setPatients(data as Patient[])
     } catch (error) {
       console.error('Error fetching patients:', error)
     } finally {
       setIsLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   React.useEffect(() => {
@@ -158,24 +74,8 @@ export default function PatientsPage() {
     setSelectedPatient(patient)
 
     try {
-      const { data } = await client
-        .from('appointments')
-        .select(`
-          id,
-          appointment_date,
-          start_time,
-          status,
-          reason,
-          department:departments(name)
-        `)
-        .eq('hospital_id', hospitalId)
-        .eq('patient_id', patient.id)
-        .order('appointment_date', { ascending: false })
-        .limit(10)
-
-      if (data) {
-        setPatientHistory(data)
-      }
+      const data = await getPatientAppointmentHistory(hospitalId, patient.id)
+      setPatientHistory(data as PatientAppointment[])
     } catch (error) {
       console.error('Error fetching patient history:', error)
     } finally {

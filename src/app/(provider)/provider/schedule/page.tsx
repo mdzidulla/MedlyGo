@@ -1,11 +1,19 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import {
+  getProviderInfo,
+  getProviderScheduleData,
+  saveSchedule,
+  deleteSchedule,
+  toggleSchedule,
+  addDepartment,
+  toggleDepartment,
+} from '@/lib/provider/actions'
 
 interface HospitalSchedule {
   id: string
@@ -61,87 +69,25 @@ export default function SchedulePage() {
     is_active: true,
   })
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   const fetchData = React.useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get hospital ID
-      let hId: string | null = null
-
-      const { data: provider } = await client
-        .from('providers')
-        .select('hospital_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (provider) {
-        hId = provider.hospital_id
-      } else {
-        const { data: hospitalByEmail } = await client
-          .from('hospitals')
-          .select('id')
-          .eq('email', user.email)
-          .single()
-
-        if (hospitalByEmail) {
-          hId = hospitalByEmail.id
-        }
-      }
-
-      if (!hId) {
+      const providerInfo = await getProviderInfo()
+      if (!providerInfo?.hospital) {
         setIsLoading(false)
         return
       }
 
+      const hId = providerInfo.hospital.id
       setHospitalId(hId)
 
-      // Fetch schedules - we'll use a hospital_schedules approach
-      // Since schedules table is provider-based, we need to check if there's a hospital-level approach
-      // For now, let's fetch hospital info and departments
-
-      // Fetch departments
-      const { data: deptData } = await client
-        .from('departments')
-        .select('id, name, is_active')
-        .eq('hospital_id', hId)
-        .order('name')
-
-      if (deptData) {
-        setDepartments(deptData)
-      }
-
-      // For hospital-level schedules, we might need to create a simple schedule management
-      // Let's check if there's existing provider schedules we can display
-      const { data: providerData } = await client
-        .from('providers')
-        .select('id')
-        .eq('hospital_id', hId)
-        .limit(1)
-        .single()
-
-      if (providerData) {
-        const { data: scheduleData } = await client
-          .from('schedules')
-          .select('*')
-          .eq('provider_id', providerData.id)
-          .order('day_of_week')
-
-        if (scheduleData) {
-          setSchedules(scheduleData)
-        }
-      }
-
+      const data = await getProviderScheduleData(hId)
+      setSchedules(data.schedules)
+      setDepartments(data.departments)
     } catch (error) {
       console.error('Error fetching schedule data:', error)
     } finally {
       setIsLoading(false)
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   React.useEffect(() => {
@@ -179,60 +125,14 @@ export default function SchedulePage() {
 
     setIsSaving(true)
     try {
-      // Get or create a provider for this hospital
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
+      const result = await saveSchedule(hospitalId, {
+        id: editingSchedule?.id,
+        ...formData,
+      })
 
-      let providerId: string | null = null
-
-      const { data: provider } = await client
-        .from('providers')
-        .select('id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (provider) {
-        providerId = provider.id
-      } else {
-        // Get any provider from this hospital
-        const { data: anyProvider } = await client
-          .from('providers')
-          .select('id')
-          .eq('hospital_id', hospitalId)
-          .limit(1)
-          .single()
-
-        if (anyProvider) {
-          providerId = anyProvider.id
-        }
-      }
-
-      if (!providerId) {
-        alert('No provider found for this hospital')
+      if (!result.success) {
+        alert(result.error || 'Failed to save schedule')
         return
-      }
-
-      if (editingSchedule) {
-        // Update existing
-        const { error } = await client
-          .from('schedules')
-          .update({
-            ...formData,
-            updated_at: new Date().toISOString(),
-          })
-          .eq('id', editingSchedule.id)
-
-        if (error) throw error
-      } else {
-        // Create new
-        const { error } = await client
-          .from('schedules')
-          .insert({
-            provider_id: providerId,
-            ...formData,
-          })
-
-        if (error) throw error
       }
 
       setEditModalOpen(false)
@@ -249,12 +149,11 @@ export default function SchedulePage() {
     if (!confirm('Are you sure you want to delete this schedule?')) return
 
     try {
-      const { error } = await client
-        .from('schedules')
-        .delete()
-        .eq('id', scheduleId)
-
-      if (error) throw error
+      const result = await deleteSchedule(scheduleId)
+      if (!result.success) {
+        alert(result.error || 'Failed to delete schedule')
+        return
+      }
       await fetchData()
     } catch (error) {
       console.error('Error deleting schedule:', error)
@@ -264,12 +163,11 @@ export default function SchedulePage() {
 
   const handleToggleSchedule = async (schedule: HospitalSchedule) => {
     try {
-      const { error } = await client
-        .from('schedules')
-        .update({ is_active: !schedule.is_active })
-        .eq('id', schedule.id)
-
-      if (error) throw error
+      const result = await toggleSchedule(schedule.id, !schedule.is_active)
+      if (!result.success) {
+        console.error('Error toggling schedule:', result.error)
+        return
+      }
       await fetchData()
     } catch (error) {
       console.error('Error toggling schedule:', error)
@@ -281,15 +179,11 @@ export default function SchedulePage() {
 
     setAddingDept(true)
     try {
-      const { error } = await client
-        .from('departments')
-        .insert({
-          hospital_id: hospitalId,
-          name: newDeptName.trim(),
-          is_active: true,
-        })
-
-      if (error) throw error
+      const result = await addDepartment(hospitalId, newDeptName)
+      if (!result.success) {
+        alert(result.error || 'Failed to add department')
+        return
+      }
       setNewDeptName('')
       await fetchData()
     } catch (error) {
@@ -302,12 +196,11 @@ export default function SchedulePage() {
 
   const handleToggleDepartment = async (dept: Department) => {
     try {
-      const { error } = await client
-        .from('departments')
-        .update({ is_active: !dept.is_active })
-        .eq('id', dept.id)
-
-      if (error) throw error
+      const result = await toggleDepartment(dept.id, !dept.is_active)
+      if (!result.success) {
+        console.error('Error toggling department:', result.error)
+        return
+      }
       await fetchData()
     } catch (error) {
       console.error('Error toggling department:', error)

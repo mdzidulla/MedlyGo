@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 export default function LoginPage() {
   const router = useRouter()
@@ -25,14 +25,14 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithPassword({
+      const result = await signIn('credentials', {
         email,
         password,
+        redirect: false,
       })
 
-      if (error) {
-        setError(error.message)
+      if (result?.error) {
+        setError(result.error)
       } else {
         router.push('/dashboard')
         router.refresh()
@@ -49,17 +49,7 @@ export default function LoginPage() {
     setError('')
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) {
-        setError(error.message)
-      }
+      await signIn('google', { callbackUrl: '/dashboard' })
     } catch (err) {
       setError(tErrors('unexpectedError'))
     } finally {

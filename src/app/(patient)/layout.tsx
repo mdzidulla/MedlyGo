@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation'
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { PatientHeader } from '@/components/layout/patient-header'
 import { ChatWidget } from '@/components/chat'
 
@@ -8,27 +9,23 @@ export default async function PatientLayout({
 }: {
   children: React.ReactNode
 }) {
-  const supabase = await createClient()
+  const session = await auth()
 
-  // Check if user is authenticated
-  const { data: { user }, error } = await supabase.auth.getUser()
-
-  if (error || !user) {
+  if (!session?.user) {
     redirect('/login')
   }
 
-  // Get user profile data from the users table
-  const { data: userProfile } = await supabase
-    .from('users')
-    .select('full_name, avatar_url, phone')
-    .eq('id', user.id)
-    .single() as { data: { full_name: string | null; avatar_url: string | null; phone: string | null } | null }
+  // Get user profile data from the database
+  const userProfile = await prisma.user.findUnique({
+    where: { id: session.user.id },
+    select: { fullName: true, avatarUrl: true, phone: true },
+  })
 
   // Build user object for header
   const userData = {
-    name: userProfile?.full_name || user.email?.split('@')[0] || 'Patient',
-    email: user.email || '',
-    avatar: userProfile?.avatar_url || undefined,
+    name: userProfile?.fullName || session.user.email?.split('@')[0] || 'Patient',
+    email: session.user.email || '',
+    avatar: userProfile?.avatarUrl || undefined,
   }
 
   return (

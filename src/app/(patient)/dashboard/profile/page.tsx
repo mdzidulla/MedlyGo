@@ -3,7 +3,8 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { getPatientProfile, updatePatientProfile } from '@/lib/dashboard/actions'
+import { signOut } from 'next-auth/react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -55,32 +56,13 @@ export default function ProfilePage() {
   const [isSavingNotifications, setIsSavingNotifications] = React.useState(false)
   const [notificationSaved, setNotificationSaved] = React.useState(false)
 
-  const supabase = createClient()
-
   React.useEffect(() => {
     async function fetchProfile() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        const { data: userProfile } = await supabase
-          .from('users')
-          .select('full_name, email, phone')
-          .eq('id', user.id)
-          .single()
-
-        if (userProfile) {
-          setUserData(userProfile as UserData)
-        }
-
-        const { data: patient } = await supabase
-          .from('patients')
-          .select('date_of_birth, gender, address, ghana_card_id, emergency_contact_name, emergency_contact_phone, emergency_contact_relationship')
-          .eq('user_id', user.id)
-          .single()
-
-        if (patient) {
-          setPatientData(patient as PatientData)
+        const data = await getPatientProfile()
+        if (data) {
+          setUserData(data.user as UserData)
+          setPatientData(data.patient as PatientData)
         }
       } catch (error) {
         console.error('Error fetching profile:', error)
@@ -90,27 +72,17 @@ export default function ProfilePage() {
     }
 
     fetchProfile()
-  }, [supabase])
+  }, [])
 
   const handleSave = async () => {
     if (!userData) return
     setIsSaving(true)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Update users table - use type assertion to bypass RLS type inference
-      await (supabase.from('users') as ReturnType<typeof supabase.from>)
-        .update({ phone: userData.phone })
-        .eq('id', user.id)
-
-      // Update patients table
-      if (patientData) {
-        await (supabase.from('patients') as ReturnType<typeof supabase.from>)
-          .update(patientData)
-          .eq('user_id', user.id)
-      }
+      await updatePatientProfile(
+        { phone: userData.phone },
+        patientData || null
+      )
 
       setIsEditing(false)
     } catch (error) {
@@ -136,7 +108,7 @@ export default function ProfilePage() {
       }
 
       // Sign out the user
-      await supabase.auth.signOut()
+      await signOut({ redirect: false })
 
       // Redirect to home page
       window.location.href = '/'

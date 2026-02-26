@@ -3,15 +3,16 @@
 import * as React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
-import { useRouter } from 'next/navigation'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
 
 export default function ResetPasswordPage() {
   const router = useRouter()
+  const searchParams = useSearchParams()
+  const token = searchParams.get('token')
   const t = useTranslations('auth.resetPassword')
   const tErrors = useTranslations('errors')
   const tCommon = useTranslations('common')
@@ -25,6 +26,11 @@ export default function ResetPasswordPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError('')
+
+    if (!token) {
+      setError('Invalid or missing reset token')
+      return
+    }
 
     if (!password || !confirmPassword) {
       setError(tErrors('fillAllFields'))
@@ -44,13 +50,15 @@ export default function ResetPasswordPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
+      const response = await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ token, password }),
       })
 
-      if (updateError) {
-        setError(updateError.message)
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || tErrors('unexpectedError'))
         return
       }
 

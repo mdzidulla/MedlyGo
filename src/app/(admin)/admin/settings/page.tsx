@@ -1,35 +1,25 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getAdminUser } from '@/lib/admin/data-actions'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 
 export default function SettingsPage() {
-  const [user, setUser] = React.useState<{ email: string; full_name: string } | null>(null)
+  const [user, setUser] = React.useState<{ email: string | null; full_name: string | null } | null>(null)
   const [isLoading, setIsLoading] = React.useState(true)
-
-  const supabase = createClient()
 
   React.useEffect(() => {
     async function fetchUser() {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (authUser) {
-        const { data } = await supabase
-          .from('users')
-          .select('full_name, email')
-          .eq('id', authUser.id)
-          .single()
-
-        if (data) {
-          setUser(data)
-        }
+      const result = await getAdminUser()
+      if (result) {
+        setUser({ full_name: result.full_name, email: result.email })
       }
       setIsLoading(false)
     }
 
     fetchUser()
-  }, [supabase])
+  }, [])
 
   if (isLoading) {
     return (

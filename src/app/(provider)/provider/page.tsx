@@ -2,11 +2,11 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
+import { getProviderInfo, getDashboardAppointments, updateAppointmentStatus } from '@/lib/provider/actions'
 
 interface TodayStats {
   total: number
@@ -94,160 +94,56 @@ export default function ProviderDashboard() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [actionLoading, setActionLoading] = React.useState<string | null>(null)
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   const today = new Date().toISOString().split('T')[0]
 
   const fetchDashboardData = React.useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      // Get provider's hospital - for hospital staff, check users table for hospital_id
-      // Or check if they're linked via providers table
-      let hospitalId: string | null = null
-
-      // First try providers table (for doctors/staff)
-      const { data: provider } = await client
-        .from('providers')
-        .select('hospital_id')
-        .eq('user_id', user.id)
-        .single()
-
-      if (provider) {
-        hospitalId = provider.hospital_id
-      } else {
-        // Check if user email matches a hospital email (for hospital admin login)
-        const { data: hospitalByEmail } = await client
-          .from('hospitals')
-          .select('id')
-          .eq('email', user.email)
-          .single()
-
-        if (hospitalByEmail) {
-          hospitalId = hospitalByEmail.id
-        }
-      }
-
-      if (!hospitalId) {
-        console.error('No hospital found for user')
+      // Get provider info (hospital)
+      const providerInfo = await getProviderInfo()
+      if (!providerInfo?.hospital) {
         setIsLoading(false)
         return
       }
 
-      // Fetch hospital info
-      const { data: hospitalData } = await client
-        .from('hospitals')
-        .select('id, name, type')
-        .eq('id', hospitalId)
-        .single()
+      const hospitalId = providerInfo.hospital.id
+      setHospital(providerInfo.hospital as HospitalInfo)
 
-      if (hospitalData) {
-        setHospital(hospitalData)
-      }
+      // Fetch dashboard appointments data
+      const dashData = await getDashboardAppointments(hospitalId)
 
-      // Fetch today's appointments for stats
-      const { data: todayAppointments } = await client
-        .from('appointments')
-        .select('id, status, checked_in_at, appointment_date')
-        .eq('hospital_id', hospitalId)
-        .eq('appointment_date', today)
-
-      if (todayAppointments) {
+      // Calculate today stats
+      if (dashData.todayAppointments) {
+        const todayApts = dashData.todayAppointments
         const stats: TodayStats = {
-          total: todayAppointments.length,
-          completed: todayAppointments.filter((a: { status: string }) => a.status === 'completed').length,
-          confirmed: todayAppointments.filter((a: { status: string }) => a.status === 'confirmed').length,
-          pending: todayAppointments.filter((a: { status: string }) => a.status === 'pending').length,
-          checkedIn: todayAppointments.filter((a: { status: string }) => a.status === 'checked_in').length,
-          noShows: todayAppointments.filter((a: { status: string }) => a.status === 'no_show').length,
+          total: todayApts.length,
+          completed: todayApts.filter((a: { status: string }) => a.status === 'completed').length,
+          confirmed: todayApts.filter((a: { status: string }) => a.status === 'confirmed').length,
+          pending: todayApts.filter((a: { status: string }) => a.status === 'pending').length,
+          checkedIn: todayApts.filter((a: { status: string }) => a.status === 'checked_in').length,
+          noShows: todayApts.filter((a: { status: string }) => a.status === 'no_show').length,
         }
         setTodayStats(stats)
       }
 
-      // Fetch patient queue (today's confirmed/checked-in appointments)
-      const { data: queueData } = await client
-        .from('appointments')
-        .select(`
-          id,
-          reference_number,
-          start_time,
-          status,
-          reason,
-          checked_in_at,
-          appointment_date,
-          patient:patients(
-            id,
-            user_id,
-            users(full_name, phone)
-          ),
-          department:departments(name)
-        `)
-        .eq('hospital_id', hospitalId)
-        .eq('appointment_date', today)
-        .in('status', ['confirmed', 'checked_in', 'in_progress'])
-        .order('start_time', { ascending: true })
-
-      // Fetch upcoming appointments (future dates, confirmed status)
-      const { data: upcomingData } = await client
-        .from('appointments')
-        .select(`
-          id,
-          reference_number,
-          start_time,
-          status,
-          appointment_date,
-          patient:patients(
-            id,
-            user_id,
-            users(full_name, phone)
-          ),
-          department:departments(name)
-        `)
-        .eq('hospital_id', hospitalId)
-        .gt('appointment_date', today)
-        .in('status', ['confirmed', 'pending'])
-        .order('appointment_date', { ascending: true })
-        .order('start_time', { ascending: true })
-        .limit(5)
-
-      if (upcomingData) {
-        setUpcomingAppointments(upcomingData)
+      if (dashData.queueData) {
+        setQueue(dashData.queueData)
       }
 
-      if (queueData) {
-        setQueue(queueData)
+      if (dashData.upcomingData) {
+        setUpcomingAppointments(dashData.upcomingData)
       }
 
-      // Fetch recent activity (last 10 appointment updates)
-      const { data: recentAppointments } = await client
-        .from('appointments')
-        .select(`
-          id,
-          status,
-          updated_at,
-          checked_in_at,
-          completed_at,
-          patient:patients(
-            users(full_name)
-          )
-        `)
-        .eq('hospital_id', hospitalId)
-        .order('updated_at', { ascending: false })
-        .limit(5)
-
-      if (recentAppointments) {
-        const activities: RecentActivity[] = recentAppointments
-          .filter((a: { patient: { users: { full_name: string } } | null }) => a.patient?.users?.full_name)
+      // Process recent activity
+      if (dashData.recentAppointments) {
+        const activities: RecentActivity[] = dashData.recentAppointments
+          .filter((a: { patient: { users: { full_name: string | null } } | null }) => a.patient?.users?.full_name)
           .map((a: {
             id: string
             status: string
             updated_at: string
             checked_in_at: string | null
             completed_at: string | null
-            patient: { users: { full_name: string } } | null
+            patient: { users: { full_name: string | null } } | null
           }) => {
             let type: RecentActivity['type'] = 'new_booking'
             let timestamp = new Date(a.updated_at)
@@ -315,15 +211,10 @@ export default function ProviderDashboard() {
   const handleCheckIn = async (appointmentId: string) => {
     setActionLoading(appointmentId)
     try {
-      const { error } = await client
-        .from('appointments')
-        .update({
-          status: 'checked_in',
-          checked_in_at: new Date().toISOString()
-        })
-        .eq('id', appointmentId)
-
-      if (error) throw error
+      const result = await updateAppointmentStatus(appointmentId, 'checked_in', {
+        checkedInAt: new Date(),
+      })
+      if (!result.success) throw new Error(result.error)
       await fetchDashboardData()
     } catch (error) {
       console.error('Error checking in:', error)
@@ -336,12 +227,8 @@ export default function ProviderDashboard() {
   const handleStartConsultation = async (appointmentId: string) => {
     setActionLoading(appointmentId)
     try {
-      const { error } = await client
-        .from('appointments')
-        .update({ status: 'in_progress' })
-        .eq('id', appointmentId)
-
-      if (error) throw error
+      const result = await updateAppointmentStatus(appointmentId, 'in_progress')
+      if (!result.success) throw new Error(result.error)
       await fetchDashboardData()
     } catch (error) {
       console.error('Error starting consultation:', error)
@@ -354,15 +241,10 @@ export default function ProviderDashboard() {
   const handleCompleteConsultation = async (appointmentId: string) => {
     setActionLoading(appointmentId)
     try {
-      const { error } = await client
-        .from('appointments')
-        .update({
-          status: 'completed',
-          completed_at: new Date().toISOString()
-        })
-        .eq('id', appointmentId)
-
-      if (error) throw error
+      const result = await updateAppointmentStatus(appointmentId, 'completed', {
+        completedAt: new Date(),
+      })
+      if (!result.success) throw new Error(result.error)
       await fetchDashboardData()
     } catch (error) {
       console.error('Error completing consultation:', error)

@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 interface ApproveAppointmentResult {
@@ -19,61 +20,64 @@ interface SuggestAlternativeResult {
 }
 
 /**
+ * Get the hospital ID for the current user.
+ * First checks the providers table, then falls back to matching the user's email
+ * against a hospital email.
+ */
+async function getHospitalIdForUser(userId: string, userEmail: string | null | undefined): Promise<string | null> {
+  // Check providers table first
+  const provider = await prisma.provider.findUnique({
+    where: { userId },
+    select: { hospitalId: true },
+  })
+
+  if (provider) {
+    return provider.hospitalId
+  }
+
+  // Fallback: check if user email matches a hospital email
+  if (userEmail) {
+    const hospital = await prisma.hospital.findFirst({
+      where: { email: userEmail },
+      select: { id: true },
+    })
+
+    if (hospital) {
+      return hospital.id
+    }
+  }
+
+  return null
+}
+
+/**
  * Approve a pending appointment
  */
 export async function approveAppointment(
   appointmentId: string
 ): Promise<ApproveAppointmentResult> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get hospital ID - check providers table first, then hospital email
-    let hospitalId: string | null = null
-    const client: any = supabase
-
-    const { data: providerData } = await client
-      .from('providers')
-      .select('id, hospital_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (providerData) {
-      hospitalId = providerData.hospital_id
-    } else {
-      // Check if user email matches a hospital email
-      const { data: hospitalByEmail } = await client
-        .from('hospitals')
-        .select('id')
-        .eq('email', user.email)
-        .single()
-
-      if (hospitalByEmail) {
-        hospitalId = hospitalByEmail.id
-      }
-    }
-
+    const hospitalId = await getHospitalIdForUser(session.user.id, session.user.email)
     if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await client
-      .from('appointments')
-      .select('id, hospital_id, status')
-      .eq('id', appointmentId)
-      .single()
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { id: true, hospitalId: true, status: true },
+    })
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== hospitalId) {
+    if (appointment.hospitalId !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -82,19 +86,14 @@ export async function approveAppointment(
     }
 
     // Update appointment status to confirmed
-    const { error } = await client
-      .from('appointments')
-      .update({
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
         status: 'confirmed',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', appointmentId)
-
-    if (error) {
-      console.error('Error approving appointment:', error)
-      return { success: false, error: 'Failed to approve appointment' }
-    }
+        reviewedBy: session.user.id,
+        reviewedAt: new Date(),
+      },
+    })
 
     revalidatePath('/provider/appointments')
     return { success: true }
@@ -112,55 +111,27 @@ export async function rejectAppointment(
   rejectionReason: string
 ): Promise<RejectAppointmentResult> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get hospital ID - check providers table first, then hospital email
-    let hospitalId: string | null = null
-    const client: any = supabase
-
-    const { data: providerData } = await client
-      .from('providers')
-      .select('id, hospital_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (providerData) {
-      hospitalId = providerData.hospital_id
-    } else {
-      // Check if user email matches a hospital email
-      const { data: hospitalByEmail } = await client
-        .from('hospitals')
-        .select('id')
-        .eq('email', user.email)
-        .single()
-
-      if (hospitalByEmail) {
-        hospitalId = hospitalByEmail.id
-      }
-    }
-
+    const hospitalId = await getHospitalIdForUser(session.user.id, session.user.email)
     if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await client
-      .from('appointments')
-      .select('id, hospital_id, status')
-      .eq('id', appointmentId)
-      .single()
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { id: true, hospitalId: true, status: true },
+    })
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== hospitalId) {
+    if (appointment.hospitalId !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -169,20 +140,15 @@ export async function rejectAppointment(
     }
 
     // Update appointment status to rejected
-    const { error } = await client
-      .from('appointments')
-      .update({
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
         status: 'rejected',
-        rejection_reason: rejectionReason,
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', appointmentId)
-
-    if (error) {
-      console.error('Error rejecting appointment:', error)
-      return { success: false, error: 'Failed to reject appointment' }
-    }
+        rejectionReason,
+        reviewedBy: session.user.id,
+        reviewedAt: new Date(),
+      },
+    })
 
     revalidatePath('/provider/appointments')
     return { success: true }
@@ -202,55 +168,27 @@ export async function suggestAlternative(
   reason?: string
 ): Promise<SuggestAlternativeResult> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    // Get hospital ID - check providers table first, then hospital email
-    let hospitalId: string | null = null
-    const client: any = supabase
-
-    const { data: providerData } = await client
-      .from('providers')
-      .select('id, hospital_id')
-      .eq('user_id', user.id)
-      .single()
-
-    if (providerData) {
-      hospitalId = providerData.hospital_id
-    } else {
-      // Check if user email matches a hospital email
-      const { data: hospitalByEmail } = await client
-        .from('hospitals')
-        .select('id')
-        .eq('email', user.email)
-        .single()
-
-      if (hospitalByEmail) {
-        hospitalId = hospitalByEmail.id
-      }
-    }
-
+    const hospitalId = await getHospitalIdForUser(session.user.id, session.user.email)
     if (!hospitalId) {
       return { success: false, error: 'Provider not found' }
     }
 
     // Verify the appointment belongs to the provider's hospital and is pending
-    const { data: appointment } = await client
-      .from('appointments')
-      .select('id, hospital_id, status')
-      .eq('id', appointmentId)
-      .single()
+    const appointment = await prisma.appointment.findUnique({
+      where: { id: appointmentId },
+      select: { id: true, hospitalId: true, status: true },
+    })
 
     if (!appointment) {
       return { success: false, error: 'Appointment not found' }
     }
 
-    if (appointment.hospital_id !== hospitalId) {
+    if (appointment.hospitalId !== hospitalId) {
       return { success: false, error: 'Unauthorized' }
     }
 
@@ -259,22 +197,17 @@ export async function suggestAlternative(
     }
 
     // Update appointment status to suggested
-    const { error } = await client
-      .from('appointments')
-      .update({
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
         status: 'suggested',
-        suggested_date: suggestedDate,
-        suggested_time: suggestedTime,
-        rejection_reason: reason || 'We have suggested an alternative time slot.',
-        reviewed_by: user.id,
-        reviewed_at: new Date().toISOString(),
-      })
-      .eq('id', appointmentId)
-
-    if (error) {
-      console.error('Error suggesting alternative:', error)
-      return { success: false, error: 'Failed to suggest alternative' }
-    }
+        suggestedDate: new Date(suggestedDate),
+        suggestedTime,
+        rejectionReason: reason || 'We have suggested an alternative time slot.',
+        reviewedBy: session.user.id,
+        reviewedAt: new Date(),
+      },
+    })
 
     revalidatePath('/provider/appointments')
     return { success: true }

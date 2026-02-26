@@ -1,6 +1,7 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { auth } from '@/lib/auth'
+import { prisma } from '@/lib/prisma'
 import { revalidatePath } from 'next/cache'
 
 // Generate a unique reference number in format: MG-YYYYMMDD-XXXX
@@ -29,28 +30,24 @@ export async function createAppointment(
   data: CreateAppointmentData
 ): Promise<CreateAppointmentResult> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: authData, error: userError } = await supabase.auth.getUser()
-    if (userError || !authData?.user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const userId = authData.user.id
+    const userId = session.user.id
 
     // Get patient ID for this user
-    const { data: patientRows, error: patientError } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(1)
+    const patient = await prisma.patient.findUnique({
+      where: { userId },
+      select: { id: true },
+    })
 
-    if (patientError || !patientRows || patientRows.length === 0) {
+    if (!patient) {
       return { success: false, error: 'Patient profile not found' }
     }
 
-    const patientId = (patientRows[0] as { id: string }).id
+    const patientId = patient.id
 
     // Generate unique reference number
     let referenceNumber = generateReferenceNumber()
@@ -58,36 +55,29 @@ export async function createAppointment(
     // Check for uniqueness and regenerate if needed
     let attempts = 0
     while (attempts < 5) {
-      const { data: existingRows } = await supabase
-        .from('appointments')
-        .select('id')
-        .eq('reference_number', referenceNumber)
-        .limit(1)
+      const existing = await prisma.appointment.findUnique({
+        where: { referenceNumber },
+        select: { id: true },
+      })
 
-      if (!existingRows || existingRows.length === 0) break
+      if (!existing) break
       referenceNumber = generateReferenceNumber()
       attempts++
     }
 
-    // Insert appointment with status 'pending' using type-casted client
-    const client: any = supabase
-    const { error: insertError } = await client
-      .from('appointments')
-      .insert({
-        patient_id: patientId,
-        hospital_id: data.hospital_id,
-        department_id: data.department_id,
-        appointment_date: data.appointment_date,
-        start_time: data.start_time,
+    // Insert appointment with status 'pending'
+    await prisma.appointment.create({
+      data: {
+        patientId,
+        hospitalId: data.hospital_id,
+        departmentId: data.department_id,
+        appointmentDate: new Date(data.appointment_date),
+        startTime: data.start_time,
         status: 'pending',
-        reference_number: referenceNumber,
+        referenceNumber,
         reason: data.reason || null,
-      })
-
-    if (insertError) {
-      console.error('Error creating appointment:', insertError)
-      return { success: false, error: insertError.message }
-    }
+      },
+    })
 
     // Revalidate the appointments page
     revalidatePath('/dashboard/appointments')
@@ -108,45 +98,41 @@ export async function cancelAppointment(
   reason?: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: authData, error: userError } = await supabase.auth.getUser()
-    if (userError || !authData?.user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const userId = authData.user.id
+    const userId = session.user.id
 
     // Get patient ID for this user
-    const { data: patientRows } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(1)
+    const patient = await prisma.patient.findUnique({
+      where: { userId },
+      select: { id: true },
+    })
 
-    if (!patientRows || patientRows.length === 0) {
+    if (!patient) {
       return { success: false, error: 'Patient profile not found' }
     }
 
-    const patientId = (patientRows[0] as { id: string }).id
+    const patientId = patient.id
 
-    // Update appointment to cancelled (only if it belongs to this patient)
-    const client: any = supabase
-    const { error: updateError } = await client
-      .from('appointments')
-      .update({
+    // Update appointment to cancelled (only if it belongs to this patient and is in a cancellable state)
+    const result = await prisma.appointment.updateMany({
+      where: {
+        id: appointmentId,
+        patientId,
+        status: { in: ['pending', 'confirmed', 'suggested'] },
+      },
+      data: {
         status: 'cancelled',
-        cancellation_reason: reason || 'Cancelled by patient',
-        cancelled_at: new Date().toISOString(),
-      })
-      .eq('id', appointmentId)
-      .eq('patient_id', patientId)
-      .in('status', ['pending', 'confirmed', 'suggested'])
+        cancellationReason: reason || 'Cancelled by patient',
+        cancelledAt: new Date(),
+      },
+    })
 
-    if (updateError) {
-      console.error('Error cancelling appointment:', updateError)
-      return { success: false, error: updateError.message }
+    if (result.count === 0) {
+      return { success: false, error: 'Appointment not found or cannot be cancelled' }
     }
 
     // Revalidate pages
@@ -166,58 +152,48 @@ export async function rescheduleAppointment(
   newTime: string
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: authData, error: userError } = await supabase.auth.getUser()
-    if (userError || !authData?.user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const userId = authData.user.id
+    const userId = session.user.id
 
     // Get patient ID for this user
-    const { data: patientRows } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(1)
+    const patient = await prisma.patient.findUnique({
+      where: { userId },
+      select: { id: true },
+    })
 
-    if (!patientRows || patientRows.length === 0) {
+    if (!patient) {
       return { success: false, error: 'Patient profile not found' }
     }
 
-    const patientId = (patientRows[0] as { id: string }).id
+    const patientId = patient.id
 
     // Verify the appointment belongs to this patient and is in a reschedulable state
-    const { data: appointmentRows, error: fetchError } = await supabase
-      .from('appointments')
-      .select('id, status')
-      .eq('id', appointmentId)
-      .eq('patient_id', patientId)
-      .in('status', ['pending', 'confirmed', 'suggested'])
-      .limit(1)
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId,
+        status: { in: ['pending', 'confirmed', 'suggested'] },
+      },
+      select: { id: true, status: true },
+    })
 
-    if (fetchError || !appointmentRows || appointmentRows.length === 0) {
+    if (!appointment) {
       return { success: false, error: 'Appointment not found or cannot be rescheduled' }
     }
 
     // Update appointment with new date/time and set status back to pending (requires re-approval)
-    const client: any = supabase
-    const { error: updateError } = await client
-      .from('appointments')
-      .update({
-        appointment_date: newDate,
-        start_time: newTime,
+    await prisma.appointment.update({
+      where: { id: appointmentId },
+      data: {
+        appointmentDate: new Date(newDate),
+        startTime: newTime,
         status: 'pending', // Requires hospital re-approval
-      })
-      .eq('id', appointmentId)
-      .eq('patient_id', patientId)
-
-    if (updateError) {
-      console.error('Error rescheduling appointment:', updateError)
-      return { success: false, error: updateError.message }
-    }
+      },
+    })
 
     // Revalidate pages
     revalidatePath('/dashboard/appointments')
@@ -236,80 +212,69 @@ export async function respondToSuggestion(
   accept: boolean
 ): Promise<{ success: boolean; error?: string }> {
   try {
-    const supabase = await createClient()
-
-    // Get current user
-    const { data: authData, error: userError } = await supabase.auth.getUser()
-    if (userError || !authData?.user) {
+    const session = await auth()
+    if (!session?.user?.id) {
       return { success: false, error: 'Not authenticated' }
     }
 
-    const userId = authData.user.id
+    const userId = session.user.id
 
     // Get patient ID for this user
-    const { data: patientRows } = await supabase
-      .from('patients')
-      .select('id')
-      .eq('user_id', userId)
-      .limit(1)
+    const patient = await prisma.patient.findUnique({
+      where: { userId },
+      select: { id: true },
+    })
 
-    if (!patientRows || patientRows.length === 0) {
+    if (!patient) {
       return { success: false, error: 'Patient profile not found' }
     }
 
-    const patientId = (patientRows[0] as { id: string }).id
+    const patientId = patient.id
 
     // Get the suggested appointment
-    const { data: appointmentRows, error: fetchError } = await supabase
-      .from('appointments')
-      .select('*')
-      .eq('id', appointmentId)
-      .eq('patient_id', patientId)
-      .eq('status', 'suggested')
-      .limit(1)
+    const appointment = await prisma.appointment.findFirst({
+      where: {
+        id: appointmentId,
+        patientId,
+        status: 'suggested',
+      },
+    })
 
-    if (fetchError || !appointmentRows || appointmentRows.length === 0) {
+    if (!appointment) {
       return { success: false, error: 'Suggested appointment not found' }
     }
 
-    const appointment: any = appointmentRows[0]
-    const client: any = supabase
-
     if (accept) {
       // Accept the suggestion - update status to confirmed
-      const updateData: any = {
+      const updateData: {
+        status: 'confirmed'
+        appointmentDate?: Date
+        startTime?: string
+      } = {
         status: 'confirmed',
       }
 
-      if (appointment.suggested_date) {
-        updateData.appointment_date = appointment.suggested_date
+      if (appointment.suggestedDate) {
+        updateData.appointmentDate = appointment.suggestedDate
       }
-      if (appointment.suggested_time) {
-        updateData.start_time = appointment.suggested_time
+      if (appointment.suggestedTime) {
+        updateData.startTime = appointment.suggestedTime
       }
 
-      const { error: updateError } = await client
-        .from('appointments')
-        .update(updateData)
-        .eq('id', appointmentId)
-
-      if (updateError) {
-        return { success: false, error: updateError.message }
-      }
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: updateData,
+      })
     } else {
       // Reject the suggestion - update status to cancelled
-      const { error: updateError } = await client
-        .from('appointments')
-        .update({
+      await prisma.appointment.update({
+        where: { id: appointmentId },
+        data: {
           status: 'cancelled',
-          cancellation_reason: 'Patient rejected suggested alternative',
-          cancelled_at: new Date().toISOString(),
-        })
-        .eq('id', appointmentId)
-
-      if (updateError) {
-        return { success: false, error: updateError.message }
-      }
+          cancellationReason: 'Patient rejected suggested alternative',
+          cancelledAt: new Date(),
+        },
+      })
     }
 
     // Revalidate pages

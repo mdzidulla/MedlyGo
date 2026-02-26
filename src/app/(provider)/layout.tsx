@@ -4,7 +4,8 @@ import * as React from 'react'
 import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
+import { getProviderInfo } from '@/lib/provider/actions'
 import { cn } from '@/lib/utils'
 
 interface HospitalInfo {
@@ -75,111 +76,19 @@ export default function ProviderLayout({
   const [pendingCount, setPendingCount] = React.useState(0)
   const [isLoading, setIsLoading] = React.useState(true)
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   React.useEffect(() => {
     async function loadHospitalInfo() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) {
-          router.push('/login')
-          return
-        }
-
-        // Check if user has provider role or is a hospital user
-        const { data: userData } = await client
-          .from('users')
-          .select('role')
-          .eq('id', user.id)
-          .single()
-
-        let isProvider = userData?.role === 'provider'
-
-        // Also check if user email matches a hospital email (fallback for hospital logins)
-        if (!isProvider && user.email) {
-          const { data: hospitalMatch } = await client
-            .from('hospitals')
-            .select('id')
-            .eq('email', user.email)
-            .single()
-
-          if (hospitalMatch) {
-            isProvider = true
-            // Update user role to provider if not already set
-            if (userData && userData.role !== 'provider') {
-              await client
-                .from('users')
-                .update({ role: 'provider' })
-                .eq('id', user.id)
-            }
-          }
-        }
-
-        if (!isProvider) {
-          // Not a provider, redirect
-          if (userData?.role === 'admin') {
-            router.push('/admin')
-          } else if (userData?.role === 'patient') {
-            router.push('/dashboard')
-          } else {
-            router.push('/login')
-          }
-          return
-        }
-
-        // Get provider's hospital
-        let hospitalId: string | null = null
-
-        // First try providers table (for doctors/staff)
-        const { data: provider } = await client
-          .from('providers')
-          .select('hospital_id')
-          .eq('user_id', user.id)
-          .single()
-
-        if (provider) {
-          hospitalId = provider.hospital_id
-        } else {
-          // Check if user email matches a hospital email (for hospital admin login)
-          const { data: hospitalByEmail } = await client
-            .from('hospitals')
-            .select('id')
-            .eq('email', user.email)
-            .single()
-
-          if (hospitalByEmail) {
-            hospitalId = hospitalByEmail.id
-          }
-        }
-
-        if (!hospitalId) {
-          console.error('No hospital found for user')
+        const result = await getProviderInfo()
+        if (!result) {
           setIsLoading(false)
           return
         }
 
-        // Fetch hospital info
-        const { data: hospitalData } = await client
-          .from('hospitals')
-          .select('id, name, type')
-          .eq('id', hospitalId)
-          .single()
-
-        if (hospitalData) {
-          setHospital(hospitalData)
+        if (result.hospital) {
+          setHospital(result.hospital as HospitalInfo)
         }
-
-        // Fetch pending appointments count
-        const { count } = await client
-          .from('appointments')
-          .select('*', { count: 'exact', head: true })
-          .eq('hospital_id', hospitalId)
-          .eq('status', 'pending')
-
-        setPendingCount(count || 0)
-
+        setPendingCount(result.pendingCount)
       } catch (error) {
         console.error('Error loading hospital info:', error)
       } finally {
@@ -188,12 +97,10 @@ export default function ProviderLayout({
     }
 
     loadHospitalInfo()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSignOut = async () => {
-    await supabase.auth.signOut()
-    router.push('/login')
+    await signOut({ callbackUrl: '/login' })
   }
 
   const getInitials = (name: string): string => {

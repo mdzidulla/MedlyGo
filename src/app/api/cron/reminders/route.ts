@@ -1,51 +1,23 @@
 import { NextResponse } from 'next/server'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 import { sendAppointmentNotification, NotificationType } from '@/services/notifications'
 
-// Vercel Cron Job - runs every hour
-// Configure in vercel.json: { "crons": [{ "path": "/api/cron/reminders", "schedule": "0 * * * *" }] }
-
+// Cron Job - runs every hour
 export const runtime = 'nodejs'
 export const dynamic = 'force-dynamic'
-export const maxDuration = 60 // 60 seconds max execution time
+export const maxDuration = 60
 
 interface AppointmentWithDetails {
   id: string
-  appointment_date: string
-  appointment_time: string
+  appointmentDate: Date
+  startTime: string
   status: string
+  referenceNumber: string
   patient: {
     id: string
     user: {
-      full_name: string
-      phone: string
-      email: string | null
-    }
-  }
-  department: {
-    name: string
-    hospital: {
-      name: string
-      address: string
-    }
-  }
-  reference_number: string
-  preparation_instructions: string | null
-}
-
-// Type for raw Supabase query result
-interface RawAppointment {
-  id: string
-  appointment_date: string
-  appointment_time: string
-  status: string
-  reference_number: string
-  preparation_instructions: string | null
-  patient: {
-    id: string
-    user: {
-      full_name: string
-      phone: string
+      fullName: string | null
+      phone: string | null
       email: string | null
     }
   }
@@ -59,29 +31,27 @@ interface RawAppointment {
 }
 
 export async function GET(request: Request) {
-  // Verify the request is from Vercel Cron
+  // Verify the request is authorized
   const authHeader = request.headers.get('authorization')
   if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
   try {
-    const supabase = await createClient()
     const now = new Date()
 
-    // Calculate time windows for each reminder type
     const windows = {
       reminder_48h: {
-        start: new Date(now.getTime() + 47 * 60 * 60 * 1000), // 47 hours from now
-        end: new Date(now.getTime() + 49 * 60 * 60 * 1000),   // 49 hours from now
+        start: new Date(now.getTime() + 47 * 60 * 60 * 1000),
+        end: new Date(now.getTime() + 49 * 60 * 60 * 1000),
       },
       reminder_24h: {
-        start: new Date(now.getTime() + 23 * 60 * 60 * 1000), // 23 hours from now
-        end: new Date(now.getTime() + 25 * 60 * 60 * 1000),   // 25 hours from now
+        start: new Date(now.getTime() + 23 * 60 * 60 * 1000),
+        end: new Date(now.getTime() + 25 * 60 * 60 * 1000),
       },
       reminder_2h: {
-        start: new Date(now.getTime() + 1.5 * 60 * 60 * 1000), // 1.5 hours from now
-        end: new Date(now.getTime() + 2.5 * 60 * 60 * 1000),   // 2.5 hours from now
+        start: new Date(now.getTime() + 1.5 * 60 * 60 * 1000),
+        end: new Date(now.getTime() + 2.5 * 60 * 60 * 1000),
       },
     }
 
@@ -91,30 +61,28 @@ export async function GET(request: Request) {
       reminder_2h: { sent: 0, failed: 0 },
     }
 
-    // Process each reminder type
     for (const [reminderType, window] of Object.entries(windows)) {
-      const appointments = await getAppointmentsInWindow(supabase, window.start, window.end, reminderType)
+      const appointments = await getAppointmentsInWindow(window.start, window.end, reminderType)
 
       for (const appointment of appointments) {
         try {
           const result = await sendAppointmentNotification(
             reminderType as NotificationType,
             {
-              patientName: appointment.patient.user.full_name,
-              patientPhone: appointment.patient.user.phone,
+              patientName: appointment.patient.user.fullName || 'Patient',
+              patientPhone: appointment.patient.user.phone || '',
               patientEmail: appointment.patient.user.email || undefined,
               hospital: appointment.department.hospital.name,
               hospitalAddress: appointment.department.hospital.address,
               department: appointment.department.name,
-              date: formatDate(appointment.appointment_date),
-              time: formatTime(appointment.appointment_time),
-              referenceNumber: appointment.reference_number,
+              date: formatDate(appointment.appointmentDate),
+              time: formatTime(appointment.startTime),
+              referenceNumber: appointment.referenceNumber,
               appointmentId: appointment.id,
-              preparationInstructions: appointment.preparation_instructions || undefined,
             },
             {
               sendSms: true,
-              sendEmail: reminderType === 'reminder_24h', // Only send email for 24h reminder
+              sendEmail: reminderType === 'reminder_24h',
             }
           )
 
@@ -145,99 +113,78 @@ export async function GET(request: Request) {
 }
 
 async function getAppointmentsInWindow(
-  supabase: Awaited<ReturnType<typeof createClient>>,
   windowStart: Date,
   windowEnd: Date,
   reminderType: string
 ): Promise<AppointmentWithDetails[]> {
-  // Get appointments within the time window that haven't received this reminder yet
-  const startDate = windowStart.toISOString().split('T')[0]
-  const endDate = windowEnd.toISOString().split('T')[0]
+  const startDate = new Date(windowStart.toISOString().split('T')[0])
+  const endDate = new Date(windowEnd.toISOString().split('T')[0])
+  endDate.setDate(endDate.getDate() + 1) // Include the end date
 
-  // Query appointments with patient and department details
-  const { data, error } = await supabase
-    .from('appointments')
-    .select(`
-      id,
-      appointment_date,
-      appointment_time,
-      status,
-      reference_number,
-      preparation_instructions,
-      patient:patients!inner(
-        id,
-        user:users!inner(
-          full_name,
-          phone,
-          email
-        )
-      ),
-      department:departments!inner(
-        name,
-        hospital:hospitals!inner(
-          name,
-          address
-        )
-      )
-    `)
-    .in('status', ['confirmed', 'scheduled'])
-    .gte('appointment_date', startDate)
-    .lte('appointment_date', endDate)
+  const appointments = await prisma.appointment.findMany({
+    where: {
+      status: { in: ['confirmed', 'scheduled'] },
+      appointmentDate: { gte: startDate, lt: endDate },
+    },
+    include: {
+      patient: {
+        include: {
+          user: {
+            select: { fullName: true, phone: true, email: true },
+          },
+        },
+      },
+      department: {
+        include: {
+          hospital: {
+            select: { name: true, address: true },
+          },
+        },
+      },
+    },
+  }) as unknown as AppointmentWithDetails[]
 
-  if (error) {
-    console.error('Error fetching appointments:', error)
-    return []
-  }
-
-  if (!data) return []
-
-  // Cast to our expected type
-  const appointments = data as unknown as RawAppointment[]
-
-  // Filter appointments that fall within the time window
-  const filteredAppointments = appointments.filter((apt) => {
-    const appointmentDateTime = new Date(`${apt.appointment_date}T${apt.appointment_time}`)
+  // Filter by exact time window
+  const filtered = appointments.filter((apt) => {
+    const dateStr = apt.appointmentDate instanceof Date
+      ? apt.appointmentDate.toISOString().split('T')[0]
+      : String(apt.appointmentDate)
+    const appointmentDateTime = new Date(`${dateStr}T${apt.startTime}`)
     return appointmentDateTime >= windowStart && appointmentDateTime <= windowEnd
   })
 
-  // Check which appointments haven't received this reminder yet
-  const appointmentIds = filteredAppointments.map(a => a.id)
+  if (filtered.length === 0) return []
 
-  if (appointmentIds.length === 0) return []
+  // Check which haven't received this reminder yet
+  const appointmentIds = filtered.map((a) => a.id)
+  const pattern = getReminderTypePattern(reminderType)
 
-  const { data: sentReminders } = await supabase
-    .from('notifications')
-    .select('appointment_id')
-    .in('appointment_id', appointmentIds)
-    .eq('type', 'sms')
-    .eq('status', 'sent')
-    .like('message', `%${getReminderTypePattern(reminderType)}%`)
+  const sentReminders = await prisma.notification.findMany({
+    where: {
+      appointmentId: { in: appointmentIds },
+      type: 'sms',
+      status: 'sent',
+      message: { contains: pattern },
+    },
+    select: { appointmentId: true },
+  })
 
-  const sentAppointmentIds = new Set(
-    (sentReminders as { appointment_id: string }[] | null)?.map(r => r.appointment_id) || []
-  )
-
-  return filteredAppointments.filter(
-    apt => !sentAppointmentIds.has(apt.id)
-  ) as AppointmentWithDetails[]
+  const sentIds = new Set(sentReminders.map((r) => r.appointmentId))
+  return filtered.filter((apt) => !sentIds.has(apt.id))
 }
 
 function getReminderTypePattern(reminderType: string): string {
   switch (reminderType) {
-    case 'reminder_48h':
-      return '48 hours'
-    case 'reminder_24h':
-      return '24 hours'
-    case 'reminder_2h':
-      return '2 hours'
-    default:
-      return ''
+    case 'reminder_48h': return '48 hours'
+    case 'reminder_24h': return '24 hours'
+    case 'reminder_2h': return '2 hours'
+    default: return ''
   }
 }
 
-function formatDate(dateString: string): string {
-  const date = new Date(dateString)
-  return date.toLocaleDateString('en-GH', {
+function formatDate(date: Date | string): string {
+  const d = date instanceof Date ? date : new Date(date)
+  return d.toLocaleDateString('en-GH', {
     weekday: 'long',
     year: 'numeric',
     month: 'long',

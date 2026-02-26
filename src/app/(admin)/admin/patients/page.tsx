@@ -1,28 +1,21 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getAdminPatients } from '@/lib/admin/data-actions'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 interface Patient {
   id: string
-  user_id: string
-  date_of_birth: string | null
-  gender: string | null
-  address: string | null
-  ghana_card_id: string | null
-  nhis_number: string | null
-  emergency_contact_name: string | null
-  emergency_contact_phone: string | null
-  emergency_contact_relationship: string | null
-  created_at: string
-  users: {
-    full_name: string
+  user: {
+    full_name: string | null
     email: string
     phone: string | null
-    role: string
+    created_at: string
   }
+  appointment_count: number
+  gender: string | null
+  date_of_birth: string | null
 }
 
 export default function PatientsPage() {
@@ -30,40 +23,16 @@ export default function PatientsPage() {
   const [isLoading, setIsLoading] = React.useState(true)
   const [searchQuery, setSearchQuery] = React.useState('')
 
-  const supabase = createClient()
-
   const fetchPatients = React.useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('patients')
-        .select(`
-          id,
-          user_id,
-          date_of_birth,
-          gender,
-          address,
-          ghana_card_id,
-          nhis_number,
-          emergency_contact_name,
-          emergency_contact_phone,
-          emergency_contact_relationship,
-          created_at,
-          users!inner(full_name, email, phone, role)
-        `)
-        .eq('users.role', 'patient')
-        .order('created_at', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching patients:', error)
-      } else if (data) {
-        setPatients(data as unknown as Patient[])
-      }
+      const data = await getAdminPatients()
+      setPatients(data as Patient[])
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchPatients()
@@ -71,9 +40,9 @@ export default function PatientsPage() {
 
   const filteredPatients = patients.filter((patient) => {
     const searchLower = searchQuery.toLowerCase()
-    const name = patient.users?.full_name || ''
-    const email = patient.users?.email || ''
-    const phone = patient.users?.phone || ''
+    const name = patient.user?.full_name || ''
+    const email = patient.user?.email || ''
+    const phone = patient.user?.phone || ''
 
     return (
       name.toLowerCase().includes(searchLower) ||
@@ -163,21 +132,18 @@ export default function PatientsPage() {
                 <div className="flex items-center gap-4">
                   <div className="w-12 h-12 rounded-full bg-primary-100 flex items-center justify-center flex-shrink-0">
                     <span className="text-primary font-semibold text-lg">
-                      {patient.users?.full_name?.charAt(0) || 'P'}
+                      {patient.user?.full_name?.charAt(0) || 'P'}
                     </span>
                   </div>
 
                   <div className="flex-1 min-w-0">
                     <div className="flex flex-wrap items-center gap-2 mb-1">
-                      <h3 className="text-label text-gray-900">{patient.users?.full_name || 'Unknown'}</h3>
+                      <h3 className="text-label text-gray-900">{patient.user?.full_name || 'Unknown'}</h3>
                       {patient.gender && (
                         <Badge variant="secondary">{patient.gender}</Badge>
                       )}
                       {calculateAge(patient.date_of_birth) && (
                         <Badge variant="secondary">{calculateAge(patient.date_of_birth)} yrs</Badge>
-                      )}
-                      {patient.nhis_number && (
-                        <Badge variant="info">NHIS</Badge>
                       )}
                     </div>
                     <div className="flex flex-wrap items-center gap-4 text-body-sm text-gray-500">
@@ -185,26 +151,18 @@ export default function PatientsPage() {
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
                         </svg>
-                        {patient.users?.email}
+                        {patient.user?.email}
                       </span>
-                      {patient.users?.phone && (
+                      {patient.user?.phone && (
                         <span className="flex items-center gap-1">
                           <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z" />
                           </svg>
-                          {patient.users.phone}
+                          {patient.user.phone}
                         </span>
                       )}
-                      <span>Joined {formatDate(patient.created_at)}</span>
+                      <span>Joined {formatDate(patient.user?.created_at)}</span>
                     </div>
-                  </div>
-
-                  <div className="text-right flex-shrink-0">
-                    {patient.address && (
-                      <p className="text-body-sm text-gray-600 max-w-[200px] truncate">
-                        {patient.address}
-                      </p>
-                    )}
                   </div>
                 </div>
               </CardContent>

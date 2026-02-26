@@ -1,0 +1,14 @@
+node_modules
+.next
+.git
+.env
+.env.local
+.env.*.local
+mysql_data
+*.md
+!README.md
+.vercel
+test-results
+playwright-report
+coverage
+src/generated/prisma

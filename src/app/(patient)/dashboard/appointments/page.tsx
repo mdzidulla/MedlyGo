@@ -3,7 +3,7 @@
 import * as React from 'react'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { getPatientAppointments } from '@/lib/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,49 +57,18 @@ export default function AppointmentsPage() {
   const [rescheduleDate, setRescheduleDate] = React.useState('')
   const [rescheduleTime, setRescheduleTime] = React.useState('')
 
-  const supabase = createClient()
-
   const fetchAppointments = React.useCallback(async () => {
     try {
-      const { data: { user } } = await supabase.auth.getUser()
-      if (!user) return
-
-      const { data: patient } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('user_id', user.id)
-        .single() as { data: { id: string } | null }
-
-      if (patient) {
-        const { data } = await supabase
-          .from('appointments')
-          .select(`
-            id,
-            appointment_date,
-            start_time,
-            status,
-            reference_number,
-            reason,
-            rejection_reason,
-            suggested_date,
-            suggested_time,
-            original_appointment_id,
-            hospital:hospitals(name),
-            department:departments(name)
-          `)
-          .eq('patient_id', patient.id)
-          .order('appointment_date', { ascending: false })
-
-        if (data) {
-          setAppointments(data as unknown as Appointment[])
-        }
+      const data = await getPatientAppointments()
+      if (data) {
+        setAppointments(data as unknown as Appointment[])
       }
     } catch (error) {
       console.error('Error fetching appointments:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchAppointments()

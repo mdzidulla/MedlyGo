@@ -6,7 +6,6 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
 
 export default function ForgotPasswordPage() {
   const t = useTranslations('auth.forgotPassword')
@@ -36,13 +35,15 @@ export default function ForgotPasswordPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/reset-password`,
+      const response = await fetch('/api/auth/forgot-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email }),
       })
 
-      if (resetError) {
-        setError(resetError.message)
+      if (!response.ok) {
+        const data = await response.json()
+        setError(data.error || tErrors('unexpectedError'))
         return
       }
 

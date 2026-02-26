@@ -1,10 +1,15 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import {
+  getProviderInfo,
+  getProviderHospitalSettings,
+  updateHospitalProfile,
+  updateHospitalHours,
+} from '@/lib/provider/actions'
 
 interface HospitalSettings {
   id: string
@@ -76,53 +81,19 @@ export default function SettingsPage() {
     confirmPassword: '',
   })
 
-  const supabase = createClient()
-  // eslint-disable-next-line
-  const client = supabase as any
-
   React.useEffect(() => {
     async function loadSettings() {
       try {
-        const { data: { user } } = await supabase.auth.getUser()
-        if (!user) return
-
-        // Get hospital ID
-        let hospitalId: string | null = null
-
-        const { data: provider } = await client
-          .from('providers')
-          .select('hospital_id')
-          .eq('user_id', user.id)
-          .single()
-
-        if (provider) {
-          hospitalId = provider.hospital_id
-        } else {
-          const { data: hospitalByEmail } = await client
-            .from('hospitals')
-            .select('id')
-            .eq('email', user.email)
-            .single()
-
-          if (hospitalByEmail) {
-            hospitalId = hospitalByEmail.id
-          }
-        }
-
-        if (!hospitalId) {
+        const providerInfo = await getProviderInfo()
+        if (!providerInfo?.hospital) {
           setIsLoading(false)
           return
         }
 
-        // Fetch hospital settings
-        const { data: hospitalData } = await client
-          .from('hospitals')
-          .select('*')
-          .eq('id', hospitalId)
-          .single()
+        const hospitalData = await getProviderHospitalSettings(providerInfo.hospital.id)
 
         if (hospitalData) {
-          setHospital(hospitalData)
+          setHospital(hospitalData as HospitalSettings)
           setFormData({
             name: hospitalData.name || '',
             address: hospitalData.address || '',
@@ -131,7 +102,7 @@ export default function SettingsPage() {
             phone: hospitalData.phone || '',
             email: hospitalData.email || '',
             website: hospitalData.website || '',
-            type: hospitalData.type || 'public',
+            type: (hospitalData.type as 'public' | 'private') || 'public',
             description: hospitalData.description || '',
           })
           setHoursData({
@@ -149,7 +120,6 @@ export default function SettingsPage() {
     }
 
     loadSettings()
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [])
 
   const handleSaveProfile = async () => {
@@ -160,23 +130,12 @@ export default function SettingsPage() {
     setSuccess('')
 
     try {
-      const { error: updateError } = await client
-        .from('hospitals')
-        .update({
-          name: formData.name,
-          address: formData.address,
-          city: formData.city,
-          region: formData.region,
-          phone: formData.phone || null,
-          email: formData.email || null,
-          website: formData.website || null,
-          type: formData.type,
-          description: formData.description || null,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', hospital.id)
+      const result = await updateHospitalProfile(hospital.id, formData)
 
-      if (updateError) throw updateError
+      if (!result.success) {
+        setError(result.error || 'Failed to update profile')
+        return
+      }
 
       setSuccess('Profile updated successfully!')
       setHospital(prev => prev ? { ...prev, ...formData } : null)
@@ -196,17 +155,12 @@ export default function SettingsPage() {
     setSuccess('')
 
     try {
-      const { error: updateError } = await client
-        .from('hospitals')
-        .update({
-          is_24_hours: hoursData.is_24_hours,
-          opening_time: hoursData.is_24_hours ? null : hoursData.opening_time,
-          closing_time: hoursData.is_24_hours ? null : hoursData.closing_time,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', hospital.id)
+      const result = await updateHospitalHours(hospital.id, hoursData)
 
-      if (updateError) throw updateError
+      if (!result.success) {
+        setError(result.error || 'Failed to update operating hours')
+        return
+      }
 
       setSuccess('Operating hours updated successfully!')
     } catch (err) {
@@ -234,18 +188,9 @@ export default function SettingsPage() {
     setIsSaving(true)
 
     try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: passwordData.newPassword,
-      })
-
-      if (updateError) throw updateError
-
-      setSuccess('Password changed successfully!')
-      setPasswordData({
-        currentPassword: '',
-        newPassword: '',
-        confirmPassword: '',
-      })
+      // Password change is not supported via NextAuth in the same way as Supabase.
+      // This would need a custom server action that updates the password in the database.
+      setError('Password change is not yet supported. Please contact an administrator.')
     } catch (err) {
       console.error('Error changing password:', err)
       setError('Failed to change password')

@@ -1,31 +1,26 @@
 'use client'
 
 import * as React from 'react'
-import { createClient } from '@/lib/supabase/client'
+import { getAdminAppointments } from '@/lib/admin/data-actions'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 
 interface Appointment {
   id: string
-  patient_id: string
-  hospital_id: string
-  department_id: string | null
   appointment_date: string
   start_time: string
   status: string
-  notes: string | null
   reference_number: string | null
-  created_at: string
-  patients: {
-    users: {
-      full_name: string
-      email: string
+  reason: string | null
+  patient: {
+    user: {
+      full_name: string | null
     }
-  }
-  hospitals: {
+  } | null
+  hospital: {
     name: string
-  }
-  departments: {
+  } | null
+  department: {
     name: string
   } | null
 }
@@ -38,63 +33,25 @@ export default function AppointmentsPage() {
   const [searchQuery, setSearchQuery] = React.useState('')
   const [filter, setFilter] = React.useState<FilterType>('all')
 
-  const supabase = createClient()
-
   const fetchAppointments = React.useCallback(async () => {
     try {
-      const { data, error } = await supabase
-        .from('appointments')
-        .select(`
-          id,
-          patient_id,
-          hospital_id,
-          department_id,
-          appointment_date,
-          start_time,
-          status,
-          notes,
-          reference_number,
-          created_at,
-          patients(users(full_name, email)),
-          hospitals(name),
-          departments(name)
-        `)
-        .order('appointment_date', { ascending: false })
-
-      if (error) {
-        console.error('Error fetching appointments:', error)
-      } else if (data) {
-        setAppointments(data as unknown as Appointment[])
-      }
+      const data = await getAdminAppointments()
+      setAppointments(data as Appointment[])
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchAppointments()
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel('admin-appointments')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        () => fetchAppointments()
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [supabase, fetchAppointments])
+  }, [fetchAppointments])
 
   const filteredAppointments = appointments.filter((apt) => {
     const searchLower = searchQuery.toLowerCase()
-    const patientName = apt.patients?.users?.full_name || ''
-    const hospitalName = apt.hospitals?.name || ''
+    const patientName = apt.patient?.user?.full_name || ''
+    const hospitalName = apt.hospital?.name || ''
     const reference = apt.reference_number || ''
 
     const matchesSearch =
@@ -236,7 +193,7 @@ export default function AppointmentsPage() {
                     <div className="flex-1 min-w-0">
                       <div className="flex flex-wrap items-center gap-2 mb-1">
                         <h3 className="text-label text-gray-900">
-                          {appointment.patients?.users?.full_name || 'Unknown Patient'}
+                          {appointment.patient?.user?.full_name || 'Unknown Patient'}
                         </h3>
                         <Badge variant={getStatusVariant(appointment.status)}>
                           {appointment.status}
@@ -248,12 +205,12 @@ export default function AppointmentsPage() {
                         )}
                       </div>
                       <p className="text-body-sm text-gray-600 mb-1">
-                        {appointment.hospitals?.name || 'Unknown Hospital'}
-                        {appointment.departments?.name && ` • ${appointment.departments.name}`}
+                        {appointment.hospital?.name || 'Unknown Hospital'}
+                        {appointment.department?.name && ` • ${appointment.department.name}`}
                       </p>
-                      {appointment.notes && (
+                      {appointment.reason && (
                         <p className="text-body-sm text-gray-500 truncate">
-                          Notes: {appointment.notes}
+                          Notes: {appointment.reason}
                         </p>
                       )}
                     </div>

@@ -2,7 +2,7 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getAdminHospitals } from '@/lib/admin/data-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -33,66 +33,16 @@ export default function HospitalsPage() {
   const [filter, setFilter] = React.useState<FilterType>('all')
   const [actionLoading, setActionLoading] = React.useState<string | null>(null)
 
-  const supabase = createClient()
-
   const fetchHospitals = React.useCallback(async () => {
     try {
-      // First fetch hospitals
-      const { data: hospitalsData, error: hospitalsError } = await supabase
-        .from('hospitals')
-        .select(`
-          id,
-          name,
-          address,
-          city,
-          region,
-          phone,
-          email,
-          website,
-          type,
-          description,
-          is_active,
-          created_at
-        `)
-        .order('created_at', { ascending: false }) as {
-          data: Omit<Hospital, 'departments'>[] | null
-          error: any
-        }
-
-      if (hospitalsError) {
-        console.error('Error fetching hospitals:', hospitalsError)
-        setIsLoading(false)
-        return
-      }
-
-      if (!hospitalsData || hospitalsData.length === 0) {
-        setHospitals([])
-        setIsLoading(false)
-        return
-      }
-
-      // Fetch departments for each hospital
-      const hospitalIds = hospitalsData.map(h => h.id)
-      const { data: departmentsData } = await supabase
-        .from('departments')
-        .select('id, name, hospital_id')
-        .in('hospital_id', hospitalIds) as {
-          data: { id: string; name: string; hospital_id: string }[] | null
-        }
-
-      // Map departments to hospitals
-      const hospitalsWithDepts: Hospital[] = hospitalsData.map(hospital => ({
-        ...hospital,
-        departments: departmentsData?.filter(d => d.hospital_id === hospital.id).map(d => ({ id: d.id, name: d.name })) || []
-      }))
-
-      setHospitals(hospitalsWithDepts)
+      const data = await getAdminHospitals()
+      setHospitals(data as Hospital[])
     } catch (error) {
       console.error('Error:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchHospitals()

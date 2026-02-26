@@ -7,7 +7,7 @@ import { useTranslations } from 'next-intl'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { createClient } from '@/lib/supabase/client'
+import { signIn } from 'next-auth/react'
 
 export default function SignupPage() {
   const router = useRouter()
@@ -49,20 +49,16 @@ export default function SignupPage() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error: signUpError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: fullName,
-          },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
-        },
+      const response = await fetch('/api/auth/register', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, fullName }),
       })
 
-      if (signUpError) {
-        setError(signUpError.message)
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.error || tErrors('unexpectedError'))
         return
       }
 
@@ -90,18 +86,7 @@ export default function SignupPage() {
     setError('')
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}/auth/callback`,
-        },
-      })
-
-      if (error) {
-        setError(error.message)
-        setIsGoogleLoading(false)
-      }
+      await signIn('google', { callbackUrl: '/dashboard' })
     } catch (err) {
       setError(tErrors('unexpectedError'))
       setIsGoogleLoading(false)

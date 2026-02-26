@@ -1,0 +1,295 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+// ============ NextAuth.js Required Models ============
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String  @map("user_id")
+  type              String
+  provider          String
+  providerAccountId String  @map("provider_account_id")
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@map("accounts")
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  sessionToken String   @unique @map("session_token")
+  userId       String   @map("user_id")
+  expires      DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+model VerificationToken {
+  identifier String
+  token      String   @unique
+  expires    DateTime
+
+  @@unique([identifier, token])
+  @@map("verification_tokens")
+}
+
+// ============ Enums ============
+
+enum UserRole {
+  patient
+  provider
+  admin
+}
+
+enum AppointmentStatus {
+  pending
+  confirmed
+  rejected
+  suggested
+  scheduled
+  checked_in
+  in_progress
+  completed
+  cancelled
+  no_show
+}
+
+enum NotificationType {
+  sms
+  email
+}
+
+enum NotificationStatus {
+  pending
+  sent
+  failed
+}
+
+enum HospitalType {
+  public_hospital @map("public")
+  private_hospital @map("private")
+}
+
+// ============ Application Models ============
+
+model User {
+  id                 String    @id @default(uuid())
+  email              String?   @unique
+  emailVerified      DateTime? @map("email_verified")
+  password           String?
+  name               String?
+  fullName           String?   @map("full_name")
+  phone              String?
+  avatarUrl          String?   @map("avatar_url")
+  image              String?
+  role               UserRole  @default(patient)
+  preferredLanguage  String    @default("en") @map("preferred_language")
+  createdAt          DateTime  @default(now()) @map("created_at")
+  updatedAt          DateTime  @updatedAt @map("updated_at")
+
+  accounts             Account[]
+  sessions             Session[]
+  patient              Patient?
+  provider             Provider?
+  reviewedAppointments Appointment[] @relation("ReviewedBy")
+
+  @@map("users")
+}
+
+model Patient {
+  id                          String    @id @default(uuid())
+  userId                      String    @unique @map("user_id")
+  dateOfBirth                 DateTime? @map("date_of_birth") @db.Date
+  gender                      String?
+  address                     String?
+  ghanaCardId                 String?   @map("ghana_card_id")
+  nhisNumber                  String?   @map("nhis_number")
+  emergencyContactName        String?   @map("emergency_contact_name")
+  emergencyContactPhone       String?   @map("emergency_contact_phone")
+  emergencyContactRelationship String?  @map("emergency_contact_relationship")
+  medicalHistoryRef           String?   @map("medical_history_ref")
+  createdAt                   DateTime  @default(now()) @map("created_at")
+  updatedAt                   DateTime  @updatedAt @map("updated_at")
+
+  user         User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  appointments Appointment[]
+
+  @@map("patients")
+}
+
+model Hospital {
+  id           String       @id @default(uuid())
+  name         String
+  address      String
+  city         String
+  region       String
+  phone        String?
+  email        String?
+  website      String?
+  type         HospitalType @default(public_hospital)
+  description  String?      @db.Text
+  imageUrl     String?      @map("image_url")
+  latitude     Float?
+  longitude    Float?
+  is24Hours    Boolean      @default(false) @map("is_24_hours")
+  openingTime  String?      @map("opening_time")
+  closingTime  String?      @map("closing_time")
+  rating       Float?
+  totalReviews Int          @default(0) @map("total_reviews")
+  isActive     Boolean      @default(true) @map("is_active")
+  createdAt    DateTime     @default(now()) @map("created_at")
+  updatedAt    DateTime     @updatedAt @map("updated_at")
+
+  departments  Department[]
+  providers    Provider[]
+  appointments Appointment[]
+
+  @@map("hospitals")
+}
+
+model Department {
+  id          String   @id @default(uuid())
+  hospitalId  String   @map("hospital_id")
+  name        String
+  description String?  @db.Text
+  icon        String?
+  isActive    Boolean  @default(true) @map("is_active")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  hospital     Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  providers    Provider[]
+  appointments Appointment[]
+
+  @@map("departments")
+}
+
+model Provider {
+  id                   String   @id @default(uuid())
+  userId               String   @unique @map("user_id")
+  hospitalId           String   @map("hospital_id")
+  departmentId         String?  @map("department_id")
+  specialization       String?
+  credentials          String?
+  bio                  String?  @db.Text
+  consultationDuration Int      @default(30) @map("consultation_duration")
+  isActive             Boolean  @default(true) @map("is_active")
+  createdAt            DateTime @default(now()) @map("created_at")
+  updatedAt            DateTime @updatedAt @map("updated_at")
+
+  user       User        @relation(fields: [userId], references: [id], onDelete: Cascade)
+  hospital   Hospital    @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  department Department? @relation(fields: [departmentId], references: [id])
+  schedules  Schedule[]
+  feedback   Feedback[]
+
+  @@map("providers")
+}
+
+model Schedule {
+  id                 String   @id @default(uuid())
+  providerId         String   @map("provider_id")
+  dayOfWeek          Int      @map("day_of_week")
+  startTime          String   @map("start_time")
+  endTime            String   @map("end_time")
+  slotDuration       Int      @default(30) @map("slot_duration")
+  maxPatientsPerSlot Int      @default(1) @map("max_patients_per_slot")
+  isActive           Boolean  @default(true) @map("is_active")
+  createdAt          DateTime @default(now()) @map("created_at")
+  updatedAt          DateTime @updatedAt @map("updated_at")
+
+  provider Provider @relation(fields: [providerId], references: [id], onDelete: Cascade)
+
+  @@map("schedules")
+}
+
+model Appointment {
+  id                    String            @id @default(uuid())
+  patientId             String            @map("patient_id")
+  providerId            String?           @map("provider_id")
+  hospitalId            String            @map("hospital_id")
+  departmentId          String            @map("department_id")
+  appointmentDate       DateTime          @map("appointment_date") @db.Date
+  startTime             String            @map("start_time")
+  endTime               String?           @map("end_time")
+  status                AppointmentStatus @default(pending)
+  reason                String?           @db.Text
+  notes                 String?           @db.Text
+  referenceNumber       String            @unique @map("reference_number")
+  checkedInAt           DateTime?         @map("checked_in_at")
+  completedAt           DateTime?         @map("completed_at")
+  cancelledAt           DateTime?         @map("cancelled_at")
+  cancellationReason    String?           @map("cancellation_reason") @db.Text
+  reviewedBy            String?           @map("reviewed_by")
+  reviewedAt            DateTime?         @map("reviewed_at")
+  rejectionReason       String?           @map("rejection_reason") @db.Text
+  originalAppointmentId String?           @map("original_appointment_id")
+  suggestedDate         DateTime?         @map("suggested_date") @db.Date
+  suggestedTime         String?           @map("suggested_time")
+  createdAt             DateTime          @default(now()) @map("created_at")
+  updatedAt             DateTime          @updatedAt @map("updated_at")
+
+  patient               Patient       @relation(fields: [patientId], references: [id], onDelete: Cascade)
+  hospital              Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+  department            Department    @relation(fields: [departmentId], references: [id])
+  reviewer              User?         @relation("ReviewedBy", fields: [reviewedBy], references: [id])
+  originalAppointment   Appointment?  @relation("SuggestedFrom", fields: [originalAppointmentId], references: [id])
+  suggestedAppointments Appointment[] @relation("SuggestedFrom")
+  notifications         Notification[]
+  feedback              Feedback[]
+
+  @@index([patientId])
+  @@index([hospitalId])
+  @@index([appointmentDate])
+  @@index([status])
+  @@map("appointments")
+}
+
+model Notification {
+  id            String             @id @default(uuid())
+  appointmentId String             @map("appointment_id")
+  type          NotificationType
+  status        NotificationStatus @default(pending)
+  recipient     String
+  message       String             @db.Text
+  scheduledFor  DateTime           @map("scheduled_for")
+  sentAt        DateTime?          @map("sent_at")
+  errorMessage  String?            @map("error_message") @db.Text
+  createdAt     DateTime           @default(now()) @map("created_at")
+  updatedAt     DateTime           @updatedAt @map("updated_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model Feedback {
+  id            String   @id @default(uuid())
+  appointmentId String   @map("appointment_id")
+  patientId     String   @map("patient_id")
+  providerId    String   @map("provider_id")
+  rating        Int
+  comment       String?  @db.Text
+  createdAt     DateTime @default(now()) @map("created_at")
+
+  appointment Appointment @relation(fields: [appointmentId], references: [id], onDelete: Cascade)
+  provider    Provider    @relation(fields: [providerId], references: [id])
+
+  @@map("feedback")
+}

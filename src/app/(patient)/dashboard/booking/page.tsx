@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { cn } from '@/lib/utils'
-import { createClient } from '@/lib/supabase/client'
+import { getHospitals, getDepartments } from '@/lib/dashboard/actions'
 import { createAppointment } from '@/lib/appointments/actions'
 
 interface Hospital {
@@ -52,44 +52,39 @@ export default function BookPage() {
 
   // Fetch hospitals on mount
   React.useEffect(() => {
-    async function fetchHospitals() {
+    async function fetchHospitalsData() {
       setIsLoading(true)
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('hospitals')
-        .select('id, name, address, city, region, is_active, image_url')
-        .eq('is_active', true)
-        .order('name')
-
-      if (!error && data) {
-        setHospitals(data)
+      try {
+        const data = await getHospitals()
+        if (data) {
+          setHospitals(data as unknown as Hospital[])
+        }
+      } catch (error) {
+        console.error('Error fetching hospitals:', error)
       }
       setIsLoading(false)
     }
-    fetchHospitals()
+    fetchHospitalsData()
   }, [])
 
   // Fetch departments when hospital is selected
   React.useEffect(() => {
-    async function fetchDepartments() {
+    async function fetchDepartmentsData() {
       if (!selectedHospital) {
         setDepartments([])
         return
       }
 
-      const supabase = createClient()
-      const { data, error } = await supabase
-        .from('departments')
-        .select('id, name, description, hospital_id, is_active')
-        .eq('hospital_id', selectedHospital.id)
-        .eq('is_active', true)
-        .order('name')
-
-      if (!error && data) {
-        setDepartments(data)
+      try {
+        const data = await getDepartments(selectedHospital.id)
+        if (data) {
+          setDepartments(data as unknown as Department[])
+        }
+      } catch (error) {
+        console.error('Error fetching departments:', error)
       }
     }
-    fetchDepartments()
+    fetchDepartmentsData()
   }, [selectedHospital])
 
   // Filter hospitals based on search

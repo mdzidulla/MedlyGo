@@ -5,7 +5,7 @@ import Link from 'next/link'
 import Image from 'next/image'
 import { usePathname, useRouter } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { signOut } from 'next-auth/react'
 import { cn } from '@/lib/utils'
 import { LanguageSwitcher } from '@/components/language-switcher'
 
@@ -25,7 +25,6 @@ export function PatientHeader({ user }: PatientHeaderProps) {
   const [isLoggingOut, setIsLoggingOut] = React.useState(false)
   const pathname = usePathname()
   const router = useRouter()
-  const supabase = createClient()
 
   // Sample notifications - in production, fetch from database
   const [notifications, setNotifications] = React.useState([
@@ -53,9 +52,7 @@ export function PatientHeader({ user }: PatientHeaderProps) {
     setIsProfileOpen(false)
 
     try {
-      await supabase.auth.signOut()
-      router.push('/login')
-      router.refresh()
+      await signOut({ callbackUrl: '/login' })
     } catch (error) {
       console.error('Error logging out:', error)
       setIsLoggingOut(false)

@@ -5,7 +5,7 @@
 
 import { sendSMS, smsTemplates } from './sms'
 import { sendEmail, emailTemplates } from './email'
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
 
 export type NotificationType =
   | 'booking_confirmation'
@@ -185,54 +185,43 @@ function getEmailTemplate(
   }
 }
 
-interface NotificationLog {
-  appointment_id: string
-  type: string
-  status: string
-  recipient: string
-  message: string
-  scheduled_for: string
-  sent_at: string | null
-  error_message?: string
-}
-
 async function logNotification(
   type: NotificationType,
   data: AppointmentData,
   result: NotificationResult
 ): Promise<void> {
   try {
-    const supabase = await createClient()
-
     // Log SMS notification
     if (result.sms) {
-      const smsLog: NotificationLog = {
-        appointment_id: data.appointmentId,
-        type: 'sms',
-        status: result.sms.success ? 'sent' : 'failed',
-        recipient: data.patientPhone,
-        message: getSmsMessage(type, data) || '',
-        scheduled_for: new Date().toISOString(),
-        sent_at: result.sms.success ? new Date().toISOString() : null,
-        error_message: result.sms.error,
-      }
-      await (supabase.from('notifications') as any).insert(smsLog)
+      await prisma.notification.create({
+        data: {
+          appointmentId: data.appointmentId,
+          type: 'sms',
+          status: result.sms.success ? 'sent' : 'failed',
+          recipient: data.patientPhone,
+          message: getSmsMessage(type, data) || '',
+          scheduledFor: new Date(),
+          sentAt: result.sms.success ? new Date() : null,
+          errorMessage: result.sms.error || null,
+        },
+      })
     }
 
     // Log Email notification
     if (result.email) {
       const emailTemplate = getEmailTemplate(type, data)
-      const emailLog: NotificationLog = {
-        appointment_id: data.appointmentId,
-        type: 'email',
-        status: result.email.success ? 'sent' : 'failed',
-        recipient: data.patientEmail || '',
-        message: emailTemplate?.subject || '',
-        scheduled_for: new Date().toISOString(),
-        sent_at: result.email.success ? new Date().toISOString() : null,
-        error_message: result.email.error,
-      }
-      await (supabase.from('notifications') as any).insert(emailLog)
+      await prisma.notification.create({
+        data: {
+          appointmentId: data.appointmentId,
+          type: 'email',
+          status: result.email.success ? 'sent' : 'failed',
+          recipient: data.patientEmail || '',
+          message: emailTemplate?.subject || '',
+          scheduledFor: new Date(),
+          sentAt: result.email.success ? new Date() : null,
+          errorMessage: result.email.error || null,
+        },
+      })
     }
   } catch (error) {
     console.error('Failed to log notification:', error)

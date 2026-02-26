@@ -1,7 +1,10 @@
 'use server'
 
-import { createClient } from '@/lib/supabase/server'
+import { prisma } from '@/lib/prisma'
+import { auth } from '@/lib/auth'
 import { revalidatePath } from 'next/cache'
+import bcrypt from 'bcryptjs'
+import { HospitalType } from '@prisma/client'
 
 // Types
 interface HospitalData {
@@ -47,24 +50,21 @@ function generateTemporaryPassword(): string {
   return password
 }
 
+// Helper: Map 'public'/'private' to Prisma HospitalType enum
+function mapHospitalType(type: 'public' | 'private'): HospitalType {
+  return type === 'public' ? HospitalType.public_hospital : HospitalType.private_hospital
+}
+
 // Helper: Verify admin role
-async function verifyAdmin(supabase: any): Promise<{ isAdmin: boolean; userId?: string; error?: string }> {
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) {
+async function verifyAdmin(): Promise<{ isAdmin: boolean; userId?: string; error?: string }> {
+  const session = await auth()
+  if (!session?.user) {
     return { isAdmin: false, error: 'Not authenticated' }
   }
-
-  const { data: userData } = await supabase
-    .from('users')
-    .select('role')
-    .eq('id', user.id)
-    .single() as { data: { role: string } | null }
-
-  if (userData?.role !== 'admin') {
+  if (session.user.role !== 'admin') {
     return { isAdmin: false, error: 'Unauthorized - Admin access required' }
   }
-
-  return { isAdmin: true, userId: user.id }
+  return { isAdmin: true, userId: session.user.id }
 }
 
 /**
@@ -72,55 +72,31 @@ async function verifyAdmin(supabase: any): Promise<{ isAdmin: boolean; userId?: 
  */
 export async function createHospital(data: HospitalData): Promise<CreateHospitalResult> {
   try {
-    const supabase = await createClient()
-
-    const adminCheck = await verifyAdmin(supabase)
+    const adminCheck = await verifyAdmin()
     if (!adminCheck.isAdmin) {
       return { success: false, error: adminCheck.error }
     }
 
     // Generate temporary password for the hospital's admin account
     const temporaryPassword = generateTemporaryPassword()
+    const hashedPassword = await bcrypt.hash(temporaryPassword, 12)
 
-    // Create auth user for hospital
-    const { data: authData, error: authError } = await supabase.auth.signUp({
-      email: data.email,
-      password: temporaryPassword,
-      options: {
-        data: {
-          full_name: data.name,
-          role: 'provider',
-        },
+    // Create user record with hashed password
+    const user = await prisma.user.create({
+      data: {
+        email: data.email,
+        password: hashedPassword,
+        fullName: data.name,
+        name: data.name,
+        phone: data.phone,
+        role: 'provider',
+        emailVerified: new Date(),
       },
     })
 
-    if (authError || !authData.user) {
-      console.error('Error creating auth user:', authError)
-      return { success: false, error: authError?.message || 'Failed to create hospital account' }
-    }
-
-    const client: any = supabase
-
-    // Create user record
-    const { error: userError } = await client
-      .from('users')
-      .insert({
-        id: authData.user.id,
-        email: data.email,
-        full_name: data.name,
-        phone: data.phone,
-        role: 'provider',
-      })
-
-    if (userError) {
-      console.error('Error creating user record:', userError)
-      return { success: false, error: 'Failed to create user record' }
-    }
-
     // Create hospital record
-    const { data: hospitalData, error: hospitalError } = await client
-      .from('hospitals')
-      .insert({
+    const hospital = await prisma.hospital.create({
+      data: {
         name: data.name,
         address: data.address,
         city: data.city,
@@ -128,42 +104,38 @@ export async function createHospital(data: HospitalData): Promise<CreateHospital
         phone: data.phone,
         email: data.email,
         website: data.website || null,
-        type: data.type,
+        type: mapHospitalType(data.type),
         description: data.description || null,
-        is_active: true,
-      })
-      .select('id')
-      .single()
-
-    if (hospitalError || !hospitalData) {
-      console.error('Error creating hospital record:', hospitalError)
-      return { success: false, error: 'Failed to create hospital record' }
-    }
+        isActive: true,
+      },
+    })
 
     // Create provider record linking user to hospital
-    const { error: providerError } = await client
-      .from('providers')
-      .insert({
-        user_id: authData.user.id,
-        hospital_id: hospitalData.id,
-        is_active: true,
-      })
-
-    if (providerError) {
-      console.error('Error creating provider record:', providerError)
-      return { success: false, error: 'Failed to link hospital account' }
-    }
+    await prisma.provider.create({
+      data: {
+        userId: user.id,
+        hospitalId: hospital.id,
+        isActive: true,
+      },
+    })
 
     // Associate departments with hospital (if any selected)
     if (data.departments && data.departments.length > 0) {
-      const { error: deptError } = await client
-        .from('departments')
-        .update({ hospital_id: hospitalData.id })
-        .in('id', data.departments)
+      // Look up selected department names from existing records
+      const existingDepts = await prisma.department.findMany({
+        where: { id: { in: data.departments } },
+        select: { name: true, description: true, icon: true },
+      })
 
-      if (deptError) {
-        console.error('Error associating departments:', deptError)
-        // Don't fail the whole operation for this
+      if (existingDepts.length > 0) {
+        await prisma.department.createMany({
+          data: existingDepts.map((dept) => ({
+            hospitalId: hospital.id,
+            name: dept.name,
+            description: dept.description,
+            icon: dept.icon,
+          })),
+        })
       }
     }
 
@@ -171,7 +143,7 @@ export async function createHospital(data: HospitalData): Promise<CreateHospital
 
     return {
       success: true,
-      hospitalId: hospitalData.id,
+      hospitalId: hospital.id,
       credentials: {
         email: data.email,
         temporaryPassword,
@@ -191,17 +163,13 @@ export async function updateHospital(
   data: Partial<HospitalData>
 ): Promise<UpdateHospitalResult> {
   try {
-    const supabase = await createClient()
-
-    const adminCheck = await verifyAdmin(supabase)
+    const adminCheck = await verifyAdmin()
     if (!adminCheck.isAdmin) {
       return { success: false, error: adminCheck.error }
     }
 
-    const client: any = supabase
-
-    // Update hospital record
-    const updateData: any = {}
+    // Build update data, only including provided fields
+    const updateData: Record<string, unknown> = {}
     if (data.name) updateData.name = data.name
     if (data.address) updateData.address = data.address
     if (data.city) updateData.city = data.city
@@ -209,18 +177,13 @@ export async function updateHospital(
     if (data.phone) updateData.phone = data.phone
     if (data.email) updateData.email = data.email
     if (data.website !== undefined) updateData.website = data.website
-    if (data.type) updateData.type = data.type
+    if (data.type) updateData.type = mapHospitalType(data.type)
     if (data.description !== undefined) updateData.description = data.description
 
-    const { error } = await client
-      .from('hospitals')
-      .update(updateData)
-      .eq('id', hospitalId)
-
-    if (error) {
-      console.error('Error updating hospital:', error)
-      return { success: false, error: 'Failed to update hospital' }
-    }
+    await prisma.hospital.update({
+      where: { id: hospitalId },
+      data: updateData,
+    })
 
     revalidatePath('/admin/hospitals')
     revalidatePath(`/admin/hospitals/${hospitalId}`)
@@ -237,31 +200,22 @@ export async function updateHospital(
  */
 export async function deleteHospital(hospitalId: string): Promise<DeleteHospitalResult> {
   try {
-    const supabase = await createClient()
-
-    const adminCheck = await verifyAdmin(supabase)
+    const adminCheck = await verifyAdmin()
     if (!adminCheck.isAdmin) {
       return { success: false, error: adminCheck.error }
     }
 
-    const client: any = supabase
-
-    // Soft delete - set is_active to false
-    const { error } = await client
-      .from('hospitals')
-      .update({ is_active: false })
-      .eq('id', hospitalId)
-
-    if (error) {
-      console.error('Error deactivating hospital:', error)
-      return { success: false, error: 'Failed to deactivate hospital' }
-    }
+    // Soft delete - set isActive to false
+    await prisma.hospital.update({
+      where: { id: hospitalId },
+      data: { isActive: false },
+    })
 
     // Also deactivate associated providers
-    await client
-      .from('providers')
-      .update({ is_active: false })
-      .eq('hospital_id', hospitalId)
+    await prisma.provider.updateMany({
+      where: { hospitalId },
+      data: { isActive: false },
+    })
 
     revalidatePath('/admin/hospitals')
 
@@ -277,24 +231,15 @@ export async function deleteHospital(hospitalId: string): Promise<DeleteHospital
  */
 export async function reactivateHospital(hospitalId: string): Promise<UpdateHospitalResult> {
   try {
-    const supabase = await createClient()
-
-    const adminCheck = await verifyAdmin(supabase)
+    const adminCheck = await verifyAdmin()
     if (!adminCheck.isAdmin) {
       return { success: false, error: adminCheck.error }
     }
 
-    const client: any = supabase
-
-    const { error } = await client
-      .from('hospitals')
-      .update({ is_active: true })
-      .eq('id', hospitalId)
-
-    if (error) {
-      console.error('Error reactivating hospital:', error)
-      return { success: false, error: 'Failed to reactivate hospital' }
-    }
+    await prisma.hospital.update({
+      where: { id: hospitalId },
+      data: { isActive: true },
+    })
 
     revalidatePath('/admin/hospitals')
 
@@ -310,18 +255,10 @@ export async function reactivateHospital(hospitalId: string): Promise<UpdateHosp
  */
 export async function getDepartmentTypes() {
   try {
-    const supabase = await createClient()
-
-    // Get distinct department names/types
-    const { data, error } = await supabase
-      .from('departments')
-      .select('id, name')
-      .order('name')
-
-    if (error) {
-      console.error('Error fetching department types:', error)
-      return { success: false, error: 'Failed to fetch departments' }
-    }
+    const data = await prisma.department.findMany({
+      select: { id: true, name: true },
+      orderBy: { name: 'asc' },
+    })
 
     return { success: true, data }
   } catch (error) {
@@ -335,41 +272,44 @@ export async function getDepartmentTypes() {
  */
 export async function getDashboardStats() {
   try {
-    const supabase = await createClient()
-
-    const adminCheck = await verifyAdmin(supabase)
+    const adminCheck = await verifyAdmin()
     if (!adminCheck.isAdmin) {
       return { success: false, error: adminCheck.error }
     }
 
-    const today = new Date().toISOString().split('T')[0]
+    const todayStart = new Date()
+    todayStart.setHours(0, 0, 0, 0)
+    const todayEnd = new Date()
+    todayEnd.setHours(23, 59, 59, 999)
 
     // Fetch all stats in parallel
     const [
-      { count: totalPatients },
-      { count: totalHospitals },
-      { count: activeHospitals },
-      { count: totalAppointments },
-      { count: todayAppointments },
-      { count: pendingAppointments },
+      totalPatients,
+      totalHospitals,
+      activeHospitals,
+      totalAppointments,
+      todayAppointments,
+      pendingAppointments,
     ] = await Promise.all([
-      supabase.from('patients').select('*', { count: 'exact', head: true }),
-      supabase.from('hospitals').select('*', { count: 'exact', head: true }),
-      supabase.from('hospitals').select('*', { count: 'exact', head: true }).eq('is_active', true),
-      supabase.from('appointments').select('*', { count: 'exact', head: true }),
-      supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('appointment_date', today),
-      supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      prisma.patient.count(),
+      prisma.hospital.count(),
+      prisma.hospital.count({ where: { isActive: true } }),
+      prisma.appointment.count(),
+      prisma.appointment.count({
+        where: { appointmentDate: { gte: todayStart, lte: todayEnd } },
+      }),
+      prisma.appointment.count({ where: { status: 'pending' } }),
     ])
 
     return {
       success: true,
       data: {
-        totalPatients: totalPatients || 0,
-        totalHospitals: totalHospitals || 0,
-        activeHospitals: activeHospitals || 0,
-        totalAppointments: totalAppointments || 0,
-        todayAppointments: todayAppointments || 0,
-        pendingAppointments: pendingAppointments || 0,
+        totalPatients,
+        totalHospitals,
+        activeHospitals,
+        totalAppointments,
+        todayAppointments,
+        pendingAppointments,
       },
     }
   } catch (error) {

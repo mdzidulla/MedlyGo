@@ -2,7 +2,8 @@
 
 import * as React from 'react'
 import Link from 'next/link'
-import { createClient } from '@/lib/supabase/client'
+import { getDashboardStats } from '@/lib/admin/actions'
+import { getAdminAppointments } from '@/lib/admin/data-actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 
@@ -17,10 +18,9 @@ interface DashboardStats {
 
 interface RecentAppointment {
   id: string
-  created_at: string
   status: string
-  patients: { users: { full_name: string } | null } | null
-  hospitals: { name: string } | null
+  patient: { user: { full_name: string } } | null
+  hospital: { name: string } | null
 }
 
 export default function AdminDashboard() {
@@ -35,105 +35,39 @@ export default function AdminDashboard() {
   const [recentAppointments, setRecentAppointments] = React.useState<RecentAppointment[]>([])
   const [isLoading, setIsLoading] = React.useState(true)
 
-  const supabase = createClient()
-
   const fetchDashboardData = React.useCallback(async () => {
     try {
-      const today = new Date().toISOString().split('T')[0]
-
-      // Fetch all stats in parallel
-      // Count only users with role='patient' who have a patients record
-      const [
-        { count: totalPatients },
-        { count: totalHospitals },
-        { count: activeHospitals },
-        { count: totalAppointments },
-        { count: todayAppointments },
-        { count: pendingAppointments },
-        { data: recentAppts },
-      ] = await Promise.all([
-        supabase.from('users').select('*', { count: 'exact', head: true }).eq('role', 'patient'),
-        supabase.from('hospitals').select('*', { count: 'exact', head: true }),
-        supabase.from('hospitals').select('*', { count: 'exact', head: true }).eq('is_active', true),
-        supabase.from('appointments').select('*', { count: 'exact', head: true }),
-        supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('appointment_date', today),
-        supabase.from('appointments').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
-        supabase
-          .from('appointments')
-          .select(`
-            id,
-            created_at,
-            status,
-            patients(users(full_name)),
-            hospitals(name)
-          `)
-          .order('created_at', { ascending: false })
-          .limit(5),
+      // Fetch stats and recent appointments in parallel
+      const [statsResult, appointmentsData] = await Promise.all([
+        getDashboardStats(),
+        getAdminAppointments(),
       ])
 
-      setStats({
-        totalPatients: totalPatients || 0,
-        totalHospitals: totalHospitals || 0,
-        activeHospitals: activeHospitals || 0,
-        totalAppointments: totalAppointments || 0,
-        todayAppointments: todayAppointments || 0,
-        pendingAppointments: pendingAppointments || 0,
-      })
+      if (statsResult.success && statsResult.data) {
+        setStats({
+          totalPatients: statsResult.data.totalPatients,
+          totalHospitals: statsResult.data.totalHospitals,
+          activeHospitals: statsResult.data.activeHospitals,
+          totalAppointments: statsResult.data.totalAppointments,
+          todayAppointments: statsResult.data.todayAppointments,
+          pendingAppointments: statsResult.data.pendingAppointments,
+        })
+      }
 
-      if (recentAppts) {
-        setRecentAppointments(recentAppts as unknown as RecentAppointment[])
+      if (appointmentsData) {
+        // Take only the 5 most recent for the dashboard
+        setRecentAppointments(appointmentsData.slice(0, 5) as RecentAppointment[])
       }
     } catch (error) {
       console.error('Error fetching dashboard data:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchDashboardData()
-
-    // Set up real-time subscription for appointments
-    const channel = supabase
-      .channel('admin-dashboard')
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'appointments' },
-        () => {
-          fetchDashboardData()
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'patients' },
-        () => {
-          fetchDashboardData()
-        }
-      )
-      .on(
-        'postgres_changes',
-        { event: '*', schema: 'public', table: 'hospitals' },
-        () => {
-          fetchDashboardData()
-        }
-      )
-      .subscribe()
-
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [fetchDashboardData, supabase])
-
-  const formatTimeAgo = (timestamp: string) => {
-    const date = new Date(timestamp)
-    const now = new Date()
-    const diffInMinutes = Math.floor((now.getTime() - date.getTime()) / (1000 * 60))
-
-    if (diffInMinutes < 1) return 'Just now'
-    if (diffInMinutes < 60) return `${diffInMinutes} min ago`
-    if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)} hours ago`
-    return `${Math.floor(diffInMinutes / 1440)} days ago`
-  }
+  }, [fetchDashboardData])
 
   const getStatusColor = (status: string) => {
     const colors: Record<string, string> = {
@@ -355,16 +289,15 @@ export default function AdminDashboard() {
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
                         <p className="text-body-sm text-gray-900 truncate">
-                          {apt.patients?.users?.full_name || 'Unknown Patient'}
+                          {apt.patient?.user?.full_name || 'Unknown Patient'}
                         </p>
                         <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(apt.status)}`}>
                           {apt.status}
                         </span>
                       </div>
                       <p className="text-body-sm text-gray-500 truncate">
-                        {apt.hospitals?.name || 'Unknown Hospital'}
+                        {apt.hospital?.name || 'Unknown Hospital'}
                       </p>
-                      <p className="text-body-sm text-gray-400">{formatTimeAgo(apt.created_at)}</p>
                     </div>
                   </div>
                 ))}

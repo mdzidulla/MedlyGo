@@ -47,12 +47,9 @@ next-env.d.ts
 # OS
 Thumbs.db
 
-.vercel
-
 # Project Reports (local only)
 PROJECT_REPORT.md
 PROJECT_REPORT.pdf
 
-# Playwright test results
-test-results/
-playwright-report/
+# Docker
+mysql_data/

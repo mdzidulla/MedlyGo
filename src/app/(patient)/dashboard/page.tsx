@@ -4,7 +4,7 @@ import * as React from 'react'
 import Link from 'next/link'
 import { useSearchParams } from 'next/navigation'
 import { useTranslations } from 'next-intl'
-import { createClient } from '@/lib/supabase/client'
+import { getDashboardData } from '@/lib/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -57,8 +57,6 @@ function DashboardContent() {
   const [rescheduleDate, setRescheduleDate] = React.useState('')
   const [rescheduleTime, setRescheduleTime] = React.useState('')
 
-  const supabase = createClient()
-
   React.useEffect(() => {
     if (bookingSuccess) {
       const timer = setTimeout(() => setShowSuccessMessage(false), 5000)
@@ -68,79 +66,18 @@ function DashboardContent() {
 
   const fetchDashboardData = React.useCallback(async () => {
     try {
-      const { data: { user: authUser } } = await supabase.auth.getUser()
-      if (!authUser) return
+      const data = await getDashboardData()
+      if (!data) return
 
-      // Get user profile
-      const { data: profile } = await supabase
-        .from('users')
-        .select('full_name, email, phone')
-        .eq('id', authUser.id)
-        .single()
-
-      if (profile) {
-        setUser(profile as UserProfile)
-      }
-
-      // Get patient record
-      const { data: patient } = await supabase
-        .from('patients')
-        .select('id')
-        .eq('user_id', authUser.id)
-        .single() as { data: { id: string } | null }
-
-      if (patient) {
-        const now = new Date().toISOString().split('T')[0]
-
-        // Get upcoming appointments
-        const { data: upcoming } = await supabase
-          .from('appointments')
-          .select(`
-            id,
-            appointment_date,
-            start_time,
-            status,
-            reference_number,
-            hospital:hospitals(name),
-            department:departments(name)
-          `)
-          .eq('patient_id', patient.id)
-          .gte('appointment_date', now)
-          .neq('status', 'cancelled')
-          .order('appointment_date', { ascending: true })
-          .limit(5)
-
-        if (upcoming) {
-          setUpcomingAppointments(upcoming as unknown as Appointment[])
-        }
-
-        // Get past appointments
-        const { data: past } = await supabase
-          .from('appointments')
-          .select(`
-            id,
-            appointment_date,
-            start_time,
-            status,
-            reference_number,
-            hospital:hospitals(name),
-            department:departments(name)
-          `)
-          .eq('patient_id', patient.id)
-          .lt('appointment_date', now)
-          .order('appointment_date', { ascending: false })
-          .limit(3)
-
-        if (past) {
-          setPastAppointments(past as unknown as Appointment[])
-        }
-      }
+      setUser(data.user as UserProfile)
+      setUpcomingAppointments(data.upcomingAppointments as unknown as Appointment[])
+      setPastAppointments(data.pastAppointments as unknown as Appointment[])
     } catch (error) {
       console.error('Error fetching data:', error)
     } finally {
       setIsLoading(false)
     }
-  }, [supabase])
+  }, [])
 
   React.useEffect(() => {
     fetchDashboardData()

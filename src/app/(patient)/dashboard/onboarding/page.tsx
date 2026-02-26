@@ -3,7 +3,7 @@
 import * as React from 'react'
 import { useRouter } from 'next/navigation'
 import Image from 'next/image'
-import { createClient } from '@/lib/supabase/client'
+import { saveOnboardingData } from '@/lib/dashboard/actions'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 
@@ -42,7 +42,6 @@ const regions = [
 
 export default function OnboardingPage() {
   const router = useRouter()
-  const supabase = createClient()
 
   const [step, setStep] = React.useState(1)
   const [isSubmitting, setIsSubmitting] = React.useState(false)
@@ -119,52 +118,15 @@ export default function OnboardingPage() {
     setError(null)
 
     try {
-      const { data: { user } } = await supabase.auth.getUser()
+      const result = await saveOnboardingData(formData)
 
-      if (!user) {
-        setError('Session expired. Please login again.')
-        return
+      if (result.success) {
+        // Redirect to dashboard using window.location for reliable navigation
+        window.location.href = '/dashboard'
+      } else {
+        setError(result.error || 'Failed to save profile. Please try again.')
+        setIsSubmitting(false)
       }
-
-      // First, ensure user exists in users table (upsert to handle both new and existing)
-      const userData = {
-        id: user.id,
-        email: user.email,
-        full_name: user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0],
-        avatar_url: user.user_metadata?.avatar_url || null,
-        phone: formData.phone,
-      }
-
-      const { error: userError } = await (supabase
-        .from('users') as ReturnType<typeof supabase.from>)
-        .upsert(userData, {
-          onConflict: 'id',
-        })
-
-      if (userError) throw userError
-
-      // Create or update patient profile
-      const patientData = {
-        user_id: user.id,
-        date_of_birth: formData.dateOfBirth || null,
-        gender: formData.gender || null,
-        address: formData.address || null,
-        ghana_card_id: formData.ghanaCardNumber || null,
-        emergency_contact_name: formData.emergencyContactName || null,
-        emergency_contact_phone: formData.emergencyContactPhone || null,
-        emergency_contact_relationship: formData.emergencyContactRelationship || null,
-      }
-
-      const { error: patientError } = await (supabase
-        .from('patients') as ReturnType<typeof supabase.from>)
-        .upsert(patientData, {
-          onConflict: 'user_id',
-        })
-
-      if (patientError) throw patientError
-
-      // Redirect to dashboard using window.location for reliable navigation
-      window.location.href = '/dashboard'
     } catch (err) {
       console.error('Error saving profile:', err)
       setError('Failed to save profile. Please try again.')
